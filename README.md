@@ -143,3 +143,7 @@ Run the service from `apps/agents` using the scripts in that directory, or invok
 ## License
 
 This project is for educational use as a Final Year Project.
+
+
+## Authors 
+### 1. Irfan Ali 2. Zainab Mazhar  3. Syed Mohsin Taseer Naqvi
