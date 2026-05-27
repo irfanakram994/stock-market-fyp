@@ -4,6 +4,7 @@
 .env.production
 .env.development
 .env.example
+.venv
 
 # Dependencies
 node_modules/
