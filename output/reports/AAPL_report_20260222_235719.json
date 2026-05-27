@@ -1,0 +1,60 @@
+{
+  "symbol": "AAPL",
+  "generatedAt": "2026-02-22T23:57:19.592035",
+  "reportType": "prediction",
+  "data": {
+    "symbol": "AAPL",
+    "generatedAt": "2026-02-22T23:57:19.592035",
+    "currentPrice": 264.5799865722656,
+    "prediction": {
+      "trend": "neutral",
+      "forecastDays": 5,
+      "firstDayPrice": 264.83,
+      "lastDayPrice": 265.84,
+      "expectedChange": 1.26,
+      "expectedChangePct": 0.48,
+      "averageConfidence": 0.67
+    },
+    "insight": "AAPL shows neutral momentum. Price expected to range around $264.58, with modest $1.26 movement possible over 5 days. News sentiment is positive.",
+    "predictions": [
+      {
+        "date": "2026-02-21",
+        "predictedPrice": 264.83,
+        "lowerBound": 251.59,
+        "upperBound": 278.07,
+        "confidence": 0.69
+      },
+      {
+        "date": "2026-02-22",
+        "predictedPrice": 265.08,
+        "lowerBound": 251.83,
+        "upperBound": 278.34,
+        "confidence": 0.68
+      },
+      {
+        "date": "2026-02-23",
+        "predictedPrice": 265.33,
+        "lowerBound": 252.07,
+        "upperBound": 278.6,
+        "confidence": 0.67
+      },
+      {
+        "date": "2026-02-24",
+        "predictedPrice": 265.58,
+        "lowerBound": 252.31,
+        "upperBound": 278.86,
+        "confidence": 0.66
+      },
+      {
+        "date": "2026-02-25",
+        "predictedPrice": 265.84,
+        "lowerBound": 252.54,
+        "upperBound": 279.13,
+        "confidence": 0.65
+      }
+    ],
+    "sentiment": {
+      "score": 0.22718666666666662
+    }
+  }
+}

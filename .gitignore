@@ -1,0 +1,61 @@
+# Environment
+.env
+.env.local
+.env.production
+.env.development
+.env.example
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Next.js
+.next/
+out/
+.vercel
+
+# Prisma
+prisma/migrations/dev.db
+
+# Python
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Output
+apps/agents/output/
+apps/agents/reports/
+apps/agents/models/
+
+# Temporary
+*.tmp
+*.temp
