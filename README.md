@@ -1,219 +1,145 @@
-<<<<<<< HEAD
-# TradeFlux - Agentic AI Stock Market Prediction System
+# TradeFlux
 
-Production-grade stock market prediction system powered by multi-agent AI, Prophet forecasting, and real-time sentiment analysis.
+TradeFlux is an agentic AI stock market prediction system built as a Final Year Project. It combines a Next.js frontend, API routes, a PostgreSQL/Prisma data layer, and a Python agent service to analyze market data, generate forecasts, and present results in a dashboard.
 
-## 🚀 Features
+## Overview
 
-- **7 Specialized AI Agents**: NewsFetcher, InsightGenerator, MarketData, Preprocessing, Prediction, LLMSummarizer, Report
-- **Prophet Forecasting**: Industry-leading time series prediction with confidence intervals
-- **Sentiment Analysis**: VADER + Groq LLM-powered news sentiment analysis
-- **Real-time Data**: Live market data from Yahoo Finance
-- **Technical Indicators**: RSI, MACD, Bollinger Bands, Moving Averages
-- **Backtesting**: Validate trading strategies with historical data
-- **Modern UI**: Next.js 14 with dark theme and responsive design
+The application is organized around three core layers:
 
-## 📋 Tech Stack
+- A Next.js App Router frontend for the landing page, dashboard, admin panel, and super-admin panel.
+- A REST-style API layer built with Next.js route handlers for stocks, predictions, news, backtesting, notifications, authentication, and agent execution.
+- A Python agent service in `apps/agents` that orchestrates market data collection, preprocessing, forecasting, and report generation.
+
+## Current Architecture
 
 ### Frontend
-- Next.js 14 (App Router)
+
+- Next.js 14 with the App Router
 - TypeScript
 - Tailwind CSS
-- Recharts
+- Recharts for charts and visualizations
+- Role-based UI surfaces for dashboard, admin, and super-admin workflows
 
-### Backend
-- Next.js API Routes
-- PostgreSQL
-- Prisma ORM
+### Backend API
 
-### AI/ML (Python)
-- CrewAI (Agent Framework)
-- Facebook Prophet
-- VADER Sentiment
-- Groq LLM
-- Yahoo Finance API
-- News API
+- Next.js API routes under `app/api`
+- Authentication and access control helpers in `lib`
+- Supabase client support where needed
+- Prisma for database access
 
-## 🛠️ Setup Instructions
+### Data Layer
+
+- PostgreSQL as the main database
+- Prisma schema and migrations in `prisma/`
+- Cached or generated outputs stored under `output/`
+
+### Python Agent Service
+
+- Python service in `apps/agents`
+- CrewAI-based orchestration
+- Deterministic service modules for market data, sentiment, preprocessing, predictions, and reporting
+- CLI entry points for running individual workflows during development
+
+## Key Features
+
+- Stock analysis dashboards with technical indicators
+- Prediction workflows for future price movement and trend analysis
+- News-driven sentiment processing
+- Backtesting and performance review
+- Agent execution logs and monitoring
+- Admin and super-admin management interfaces
+
+## Repository Structure
+
+```text
+tradeflux/
+├── app/                 # Next.js app routes, pages, layouts, and API handlers
+├── apps/
+│   └── agents/          # Python agent service and workflow orchestration
+├── components/         # Shared React components
+├── docs/               # Architecture and project documentation
+├── lib/                # Shared frontend/server utilities
+├── output/             # Generated reports and model artifacts
+├── prisma/             # Prisma schema and migrations
+├── public/             # Static assets
+├── middleware.ts       # Route middleware
+├── package.json        # Next.js scripts and dependencies
+└── README.md
+```
+
+## Important Routes
+
+- `/` landing page
+- `/dashboard` main analytics dashboard
+- `/admin` admin portal
+- `/super-admin` system administration portal
+- `/api/stocks` stock data endpoints
+- `/api/predictions` prediction endpoints
+- `/api/news` news and sentiment endpoints
+- `/api/backtesting` backtesting endpoints
+- `/api/agents` agent orchestration endpoints
+- `/api/agents/run` run-status and execution endpoint
+
+## Setup
 
 ### Prerequisites
+
 - Node.js 18+
 - Python 3.11+
 - PostgreSQL database
 
-### 1. Clone and Install Dependencies
+### Install dependencies
 
 ```bash
-cd c:/Users/Ultron/Documents/FYP
-
-# Install Node.js dependencies
 npm install
-
-# Install Python dependencies
 cd apps/agents
 pip install -r requirements.txt
 cd ../..
 ```
 
-### 2. Configure Environment Variables
+### Environment variables
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the project root:
 
 ```env
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/TradeFlux?schema=public"
-
-# API Keys
-GROQ_API_KEY="your_groq_api_key_here"
-NEWS_API_KEY="your_news_api_key_here"
-
-# CrewAI (Groq via LiteLLM)
+DATABASE_URL="postgresql://user:password@localhost:5432/tradeflux?schema=public"
+GROQ_API_KEY="your_groq_api_key"
+NEWS_API_KEY="your_news_api_key"
 CREWAI_MODEL="groq/llama-3.3-70b-specdec"
-
-# Python Agent Service
 AGENT_SERVICE_URL="http://localhost:8000"
-
-# Next.js
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
-### 3. Setup Database
+### Database setup
 
 ```bash
-# Generate Prisma client
-npx prisma generate
-
-# Push schema to database
-npx prisma db push
-
-# (Optional) Open Prisma Studio
-npx prisma studio
+npm run db:generate
+npm run db:push
+npm run db:studio
 ```
 
-### 4. Run the Application
+### Run locally
 
 ```bash
-# Development mode
 npm run dev
-
-# The app will be available at http://localhost:3000
 ```
 
-### 5. Test Python Agents
+## Python Agents
 
-```bash
-cd apps/agents
+The agent service is structured around a workflow that:
 
-# Test individual agents
-python main.py --agent news --symbol AAPL
-python main.py --agent market --symbol AAPL
-python main.py --agent prediction --symbol AAPL --days 30
+1. Fetches stock and news data.
+2. Processes sentiment and technical indicators.
+3. Generates forecasts and insights.
+4. Saves or exports reports for later review.
 
-# Run full prediction workflow
-python main.py --agent full --symbol AAPL --days 30
-```
+Run the service from `apps/agents` using the scripts in that directory, or invoke the CLI entry point directly during development.
 
-## 📁 Project Structure
+## Notes
 
-```
-TradeFlux/
-├── apps/
-│   ├── web/                    # Next.js Frontend
-│   │   ├── app/
-│   │   │   ├── page.tsx       # Landing page
-│   │   │   ├── dashboard/     # Dashboard pages
-│   │   │   └── api/           # API routes
-│   │   ├── components/        # React components
-│   │   └── lib/               # Utilities
-│   │
-│   └── agents/                # Python Agents (CrewAI)
-│       ├── crew/              # CrewAI agents, tasks, tools, orchestrator
-│       ├── services/          # Deterministic service layer
-│       ├── utils/             # Utilities
-│       ├── main.py            # CLI entry point
-│       └── config.py          # Configuration
-│
-├── prisma/
-│   └── schema.prisma          # Database schema
-│
-├── package.json
-├── tsconfig.json
-└── README.md
-```
+- Generated artifacts under `output/` should not be committed unless they are intentionally part of the project history.
+- Large binary exports and archives should remain out of Git history to avoid push failures.
 
-## 🤖 AI Agents
+## License
 
-1. **NewsFetcherAgent**: Fetches news articles from News API
-2. **InsightGeneratorAgent**: Analyzes sentiment using VADER
-3. **MarketDataAgent**: Retrieves historical OHLCV data
-4. **PreprocessingAgent**: Merges and cleans data
-5. **PredictionAgent**: Generates forecasts using Prophet
-6. **LLMSummarizerAgent**: Creates human-readable insights
-7. **ReportAgent**: Generates JSON/CSV/PDF reports
-
-## 📊 API Endpoints
-
-- `GET /api/stocks` - List all stocks
-- `POST /api/stocks` - Add new stock
-- `GET /api/predictions` - Get predictions
-- `POST /api/predictions` - Create prediction
-- `GET /api/news` - Fetch news with sentiment
-- `POST /api/agents/run` - Execute Python agents
-- `GET /api/agents/run?jobId=xxx` - Check agent status
-
-## 🎯 Usage
-
-1. **Landing Page**: Visit http://localhost:3000
-2. **Dashboard**: Click "Try Demo" to access the dashboard
-3. **Stock Analysis**: Search for a stock symbol to view charts and indicators
-4. **AI Predictions**: Generate forecasts for any stock
-5. **Backtesting**: Test trading strategies with historical data
-6. **Agent Logs**: Monitor AI agent execution
-
-## 🔑 API Keys
-
-### Groq API
-1. Visit https://console.groq.com
-2. Create an account and generate an API key
-3. Add to `.env` as `GROQ_API_KEY`
-
-### News API
-1. Visit https://newsapi.org
-2. Sign up for a free account
-3. Get your API key
-4. Add to `.env` as `NEWS_API_KEY`
-
-## 📝 License
-
-This project is for educational purposes (Final Year Project).
-
-## 👨‍💻 Author
-
-Built with ❤️ using Next.js, Python, and AI
-=======
-## Agentic AI for Stock Market Prediction
-
-This project implements an autonomous AI-driven system designed to analyze stock market data and predict future price movements. 
-By combining machine learning models with agent-based decision-making, the system is capable of collecting market data, processing technical indicators,
-and generating intelligent predictions such as price direction and trading signals.
-
-The project focuses on applying AI techniques to financial forecasting while demonstrating the concept of agentic behavior, 
-where the system independently perceives data, reasons over predictions, and makes decisions. 
-It also includes data visualization and performance evaluation through backtesting to assess prediction accuracy.
-
-This repository is developed as a Final Year Project (FYP) and serves as a foundation for research-oriented and real-world financial AI applications.
-
-📈 Stock price prediction (Up/Down or price value)
-
-🤖 Autonomous AI agent architecture
-
-📊 Technical indicators (RSI, MACD, SMA)
-
-🧪 Backtesting and evaluation metrics
-
-📉 Data visualization dashboard
-
-🧠 Machine Learning / Deep Learning models
-
-
->>>>>>> f37a54cc33abd92fe8028b1c145dff7256ef54be
+This project is for educational use as a Final Year Project.
