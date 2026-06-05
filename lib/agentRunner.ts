@@ -7,6 +7,7 @@
 
 import { exec } from "child_process";
 import { promisify } from "util";
+import fs from "fs";
 import path from "path";
 
 const execAsync = promisify(exec);
@@ -22,8 +23,18 @@ const VENV_PYTHON_PATH = path.join(
   "Scripts",
   "python.exe",
 );
+const ROOT_VENV_PYTHON_PATH = path.join(
+  process.cwd(),
+  ".venv",
+  "Scripts",
+  "python.exe",
+);
 const SYSTEM_PYTHON = process.platform === "win32" ? "python" : "python3";
-const PYTHON_CMD = process.env.PYTHON_CMD || VENV_PYTHON_PATH;
+const PYTHON_CMD =
+  process.env.PYTHON_CMD ||
+  (fs.existsSync(ROOT_VENV_PYTHON_PATH)
+    ? ROOT_VENV_PYTHON_PATH
+    : VENV_PYTHON_PATH);
 
 export interface AgentPrediction {
   date: string;

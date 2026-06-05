@@ -11,6 +11,7 @@ import {
     BarChart3,
     ScrollText,
     Info,
+    MessageSquare,
     ChevronLeft,
     ChevronRight
 } from 'lucide-react';
@@ -22,6 +23,7 @@ const menuItems = [
     // { icon: Wallet, label: 'Portfolio', href: '/dashboard/portfolio' }, // Temporarily disabled
     { icon: TrendingUp, label: 'Stock Analysis', href: '/dashboard/stock-analysis' },
     { icon: Brain, label: 'AI Predictions', href: '/dashboard/ai-predictions' },
+    { icon: MessageSquare, label: 'Chatbot', href: '/dashboard/chatbot' },
     { icon: FlaskConical, label: 'Backtesting', href: '/dashboard/backtesting' },
     { icon: BarChart3, label: 'Visualizations', href: '/dashboard/visualizations' },
     { icon: ScrollText, label: 'Agent Logs', href: '/dashboard/agent-logs' },
