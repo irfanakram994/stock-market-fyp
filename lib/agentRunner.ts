@@ -55,11 +55,17 @@ const ROOT_VENV_PYTHON_PATH = path.join(
   "python.exe",
 );
 const SYSTEM_PYTHON = process.platform === "win32" ? "python" : "python3";
-const PYTHON_CMD =
-  process.env.PYTHON_CMD ||
-  (fs.existsSync(ROOT_VENV_PYTHON_PATH)
-    ? ROOT_VENV_PYTHON_PATH
-    : VENV_PYTHON_PATH);
+let PYTHON_CMD = process.env.PYTHON_CMD || "";
+
+if (!PYTHON_CMD || (PYTHON_CMD.includes(".venv") && !fs.existsSync(PYTHON_CMD))) {
+  if (fs.existsSync(VENV_PYTHON_PATH)) {
+    PYTHON_CMD = VENV_PYTHON_PATH;
+  } else if (fs.existsSync(ROOT_VENV_PYTHON_PATH)) {
+    PYTHON_CMD = ROOT_VENV_PYTHON_PATH;
+  } else {
+    PYTHON_CMD = SYSTEM_PYTHON;
+  }
+}
 
 export interface AgentPrediction {
   date: string;
