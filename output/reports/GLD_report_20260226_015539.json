@@ -1,0 +1,235 @@
+{
+  "symbol": "GLD",
+  "generatedAt": "2026-02-26T01:55:39.481888",
+  "reportType": "prediction",
+  "data": {
+    "symbol": "GLD",
+    "generatedAt": "2026-02-26T01:55:39.481598",
+    "currentPrice": 475.5,
+    "prediction": {
+      "trend": "bullish",
+      "forecastDays": 30,
+      "firstDayPrice": 470.72,
+      "lastDayPrice": 491.33,
+      "expectedChange": 15.83,
+      "expectedChangePct": 3.33,
+      "averageConfidence": 0.966
+    },
+    "insight": "GLD exhibits bullish trend with predicted price rise from $475.50 to $491.33 (3.3%). Consider long positions.",
+    "predictions": [
+      {
+        "date": "2026-02-26",
+        "predictedPrice": 470.72,
+        "lowerBound": 461.83,
+        "upperBound": 479.13,
+        "confidence": 0.965
+      },
+      {
+        "date": "2026-02-27",
+        "predictedPrice": 472.24,
+        "lowerBound": 463.27,
+        "upperBound": 480.98,
+        "confidence": 0.964
+      },
+      {
+        "date": "2026-02-28",
+        "predictedPrice": 491.96,
+        "lowerBound": 484.19,
+        "upperBound": 500.66,
+        "confidence": 0.968
+      },
+      {
+        "date": "2026-03-01",
+        "predictedPrice": 494.0,
+        "lowerBound": 485.39,
+        "upperBound": 502.39,
+        "confidence": 0.967
+      },
+      {
+        "date": "2026-03-02",
+        "predictedPrice": 478.53,
+        "lowerBound": 469.77,
+        "upperBound": 487.74,
+        "confidence": 0.964
+      },
+      {
+        "date": "2026-03-03",
+        "predictedPrice": 480.57,
+        "lowerBound": 472.19,
+        "upperBound": 488.68,
+        "confidence": 0.967
+      },
+      {
+        "date": "2026-03-04",
+        "predictedPrice": 483.48,
+        "lowerBound": 474.3,
+        "upperBound": 492.32,
+        "confidence": 0.964
+      },
+      {
+        "date": "2026-03-05",
+        "predictedPrice": 484.44,
+        "lowerBound": 475.82,
+        "upperBound": 493.0,
+        "confidence": 0.966
+      },
+      {
+        "date": "2026-03-06",
+        "predictedPrice": 485.64,
+        "lowerBound": 476.98,
+        "upperBound": 494.63,
+        "confidence": 0.965
+      },
+      {
+        "date": "2026-03-07",
+        "predictedPrice": 504.84,
+        "lowerBound": 496.1,
+        "upperBound": 513.54,
+        "confidence": 0.967
+      },
+      {
+        "date": "2026-03-08",
+        "predictedPrice": 506.19,
+        "lowerBound": 498.0,
+        "upperBound": 514.61,
+        "confidence": 0.968
+      },
+      {
+        "date": "2026-03-09",
+        "predictedPrice": 489.86,
+        "lowerBound": 481.31,
+        "upperBound": 498.2,
+        "confidence": 0.967
+      },
+      {
+        "date": "2026-03-10",
+        "predictedPrice": 490.93,
+        "lowerBound": 481.91,
+        "upperBound": 499.39,
+        "confidence": 0.966
+      },
+      {
+        "date": "2026-03-11",
+        "predictedPrice": 492.75,
+        "lowerBound": 484.31,
+        "upperBound": 501.58,
+        "confidence": 0.966
+      },
+      {
+        "date": "2026-03-12",
+        "predictedPrice": 492.55,
+        "lowerBound": 484.21,
+        "upperBound": 501.07,
+        "confidence": 0.967
+      },
+      {
+        "date": "2026-03-13",
+        "predictedPrice": 492.54,
+        "lowerBound": 483.47,
+        "upperBound": 500.76,
+        "confidence": 0.966
+      },
+      {
+        "date": "2026-03-14",
+        "predictedPrice": 510.51,
+        "lowerBound": 501.8,
+        "upperBound": 518.89,
+        "confidence": 0.968
+      },
+      {
+        "date": "2026-03-15",
+        "predictedPrice": 510.64,
+        "lowerBound": 501.74,
+        "upperBound": 519.01,
+        "confidence": 0.967
+      },
+      {
+        "date": "2026-03-16",
+        "predictedPrice": 493.15,
+        "lowerBound": 484.66,
+        "upperBound": 502.34,
+        "confidence": 0.965
+      },
+      {
+        "date": "2026-03-17",
+        "predictedPrice": 493.12,
+        "lowerBound": 484.54,
+        "upperBound": 501.6,
+        "confidence": 0.967
+      },
+      {
+        "date": "2026-03-18",
+        "predictedPrice": 493.94,
+        "lowerBound": 485.5,
+        "upperBound": 502.78,
+        "confidence": 0.966
+      },
+      {
+        "date": "2026-03-19",
+        "predictedPrice": 492.86,
+        "lowerBound": 484.55,
+        "upperBound": 501.26,
+        "confidence": 0.967
+      },
+      {
+        "date": "2026-03-20",
+        "predictedPrice": 492.11,
+        "lowerBound": 484.44,
+        "upperBound": 500.1,
+        "confidence": 0.969
+      },
+      {
+        "date": "2026-03-21",
+        "predictedPrice": 509.51,
+        "lowerBound": 501.5,
+        "upperBound": 518.33,
+        "confidence": 0.968
+      },
+      {
+        "date": "2026-03-22",
+        "predictedPrice": 509.24,
+        "lowerBound": 501.22,
+        "upperBound": 517.59,
+        "confidence": 0.969
+      },
+      {
+        "date": "2026-03-23",
+        "predictedPrice": 491.52,
+        "lowerBound": 483.26,
+        "upperBound": 500.12,
+        "confidence": 0.967
+      },
+      {
+        "date": "2026-03-24",
+        "predictedPrice": 491.44,
+        "lowerBound": 483.44,
+        "upperBound": 500.04,
+        "confidence": 0.967
+      },
+      {
+        "date": "2026-03-25",
+        "predictedPrice": 492.39,
+        "lowerBound": 483.51,
+        "upperBound": 500.73,
+        "confidence": 0.966
+      },
+      {
+        "date": "2026-03-26",
+        "predictedPrice": 491.61,
+        "lowerBound": 483.34,
+        "upperBound": 500.16,
+        "confidence": 0.967
+      },
+      {
+        "date": "2026-03-27",
+        "predictedPrice": 491.33,
+        "lowerBound": 482.49,
+        "upperBound": 500.49,
+        "confidence": 0.965
+      }
+    ],
+    "sentiment": {
+      "score": -0.2553
+    }
+  }
+}

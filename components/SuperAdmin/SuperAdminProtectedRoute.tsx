@@ -1,0 +1,35 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSuperAdminAuth } from '@/lib/superAdminAuthContext';
+
+export function SuperAdminProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { superAdmin, loading } = useSuperAdminAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !superAdmin) {
+      router.push('/super-admin/login');
+    }
+  }, [loading, superAdmin, router]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 mb-4 bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-full">
+            <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-gray-400">Verifying super admin access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!superAdmin) {
+    return null;
+  }
+
+  return <>{children}</>;
+}

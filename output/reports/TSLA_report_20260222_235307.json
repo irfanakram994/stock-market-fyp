@@ -1,0 +1,74 @@
+{
+  "symbol": "TSLA",
+  "generatedAt": "2026-02-22T23:53:07.743110",
+  "reportType": "prediction",
+  "data": {
+    "symbol": "TSLA",
+    "generatedAt": "2026-02-22T23:53:07.743110",
+    "currentPrice": 411.82000732421875,
+    "prediction": {
+      "trend": "neutral",
+      "forecastDays": 7,
+      "firstDayPrice": 411.19,
+      "lastDayPrice": 407.42,
+      "expectedChange": -4.4,
+      "expectedChangePct": -1.07,
+      "averageConfidence": 0.66
+    },
+    "insight": "TSLA shows neutral momentum. Price expected to range around $411.82, with modest $4.40 movement possible over 7 days. News sentiment is positive.",
+    "predictions": [
+      {
+        "date": "2026-02-21",
+        "predictedPrice": 411.19,
+        "lowerBound": 390.63,
+        "upperBound": 431.75,
+        "confidence": 0.69
+      },
+      {
+        "date": "2026-02-22",
+        "predictedPrice": 410.56,
+        "lowerBound": 390.04,
+        "upperBound": 431.09,
+        "confidence": 0.68
+      },
+      {
+        "date": "2026-02-23",
+        "predictedPrice": 409.94,
+        "lowerBound": 389.44,
+        "upperBound": 430.43,
+        "confidence": 0.67
+      },
+      {
+        "date": "2026-02-24",
+        "predictedPrice": 409.31,
+        "lowerBound": 388.84,
+        "upperBound": 429.77,
+        "confidence": 0.66
+      },
+      {
+        "date": "2026-02-25",
+        "predictedPrice": 408.68,
+        "lowerBound": 388.25,
+        "upperBound": 429.11,
+        "confidence": 0.65
+      },
+      {
+        "date": "2026-02-26",
+        "predictedPrice": 408.05,
+        "lowerBound": 387.65,
+        "upperBound": 428.46,
+        "confidence": 0.64
+      },
+      {
+        "date": "2026-02-27",
+        "predictedPrice": 407.42,
+        "lowerBound": 387.05,
+        "upperBound": 427.8,
+        "confidence": 0.63
+      }
+    ],
+    "sentiment": {
+      "score": 0.382075
+    }
+  }
+}

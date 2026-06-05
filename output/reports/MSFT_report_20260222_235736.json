@@ -1,0 +1,46 @@
+{
+  "symbol": "MSFT",
+  "generatedAt": "2026-02-22T23:57:36.806300",
+  "reportType": "prediction",
+  "data": {
+    "symbol": "MSFT",
+    "generatedAt": "2026-02-22T23:57:36.806300",
+    "currentPrice": 397.2300109863281,
+    "prediction": {
+      "trend": "neutral",
+      "forecastDays": 3,
+      "firstDayPrice": 395.62,
+      "lastDayPrice": 392.39,
+      "expectedChange": -4.84,
+      "expectedChangePct": -1.22,
+      "averageConfidence": 0.68
+    },
+    "insight": "MSFT shows neutral momentum. Price expected to range around $397.23, with modest $4.84 movement possible over 3 days. News sentiment is positive.",
+    "predictions": [
+      {
+        "date": "2026-02-21",
+        "predictedPrice": 395.62,
+        "lowerBound": 375.84,
+        "upperBound": 415.4,
+        "confidence": 0.69
+      },
+      {
+        "date": "2026-02-22",
+        "predictedPrice": 394.0,
+        "lowerBound": 374.3,
+        "upperBound": 413.7,
+        "confidence": 0.68
+      },
+      {
+        "date": "2026-02-23",
+        "predictedPrice": 392.39,
+        "lowerBound": 372.77,
+        "upperBound": 412.01,
+        "confidence": 0.67
+      }
+    ],
+    "sentiment": {
+      "score": 0.14317368421052631
+    }
+  }
+}

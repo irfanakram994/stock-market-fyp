@@ -1,0 +1,46 @@
+{
+  "symbol": "GOOGL",
+  "generatedAt": "2026-02-22T23:57:44.991766",
+  "reportType": "prediction",
+  "data": {
+    "symbol": "GOOGL",
+    "generatedAt": "2026-02-22T23:57:44.991766",
+    "currentPrice": 314.9800109863281,
+    "prediction": {
+      "trend": "neutral",
+      "forecastDays": 3,
+      "firstDayPrice": 314.53,
+      "lastDayPrice": 313.64,
+      "expectedChange": -1.34,
+      "expectedChangePct": -0.43,
+      "averageConfidence": 0.68
+    },
+    "insight": "GOOGL shows neutral momentum. Price expected to range around $314.98, with modest $1.34 movement possible over 3 days. News sentiment is positive.",
+    "predictions": [
+      {
+        "date": "2026-02-21",
+        "predictedPrice": 314.53,
+        "lowerBound": 298.81,
+        "upperBound": 330.26,
+        "confidence": 0.69
+      },
+      {
+        "date": "2026-02-22",
+        "predictedPrice": 314.09,
+        "lowerBound": 298.38,
+        "upperBound": 329.79,
+        "confidence": 0.68
+      },
+      {
+        "date": "2026-02-23",
+        "predictedPrice": 313.64,
+        "lowerBound": 297.96,
+        "upperBound": 329.32,
+        "confidence": 0.67
+      }
+    ],
+    "sentiment": {
+      "score": 0.2124176470588235
+    }
+  }
+}

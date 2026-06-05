@@ -1,0 +1,305 @@
+// Prisma Schema for TradeFlux - Agentic AI Stock Prediction System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and profiles
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  gender    String?
+  profileImage String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  stocks    Stock[]
+  agentLogs AgentLog[]
+}
+
+// Stock symbols and metadata
+model Stock {
+  id          String   @id @default(cuid())
+  symbol      String   @unique
+  name        String
+  sector      String?
+  industry    String?
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id])
+  news        News[]
+  predictions Prediction[]
+  backtests   BacktestResult[]
+}
+
+// News articles with source and timestamp
+model News {
+  id          String   @id @default(cuid())
+  stockId     String
+  title       String
+  description String?
+  content     String?
+  source      String
+  author      String?
+  url         String
+  imageUrl    String?
+  publishedAt DateTime
+  fetchedAt   DateTime @default(now())
+  
+  // Relations
+  stock       Stock      @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  sentiment   Sentiment?
+  
+  @@index([stockId])
+  @@index([publishedAt])
+}
+
+// Sentiment scores linked to news
+model Sentiment {
+  id        String   @id @default(cuid())
+  newsId    String   @unique
+  score     Float    // -1 to 1 (negative to positive)
+  compound  Float    // VADER compound score
+  positive  Float
+  negative  Float
+  neutral   Float
+  label     String   // "positive", "negative", "neutral"
+  createdAt DateTime @default(now())
+  
+  // Relations
+  news      News     @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  
+  @@index([score])
+}
+
+// Prophet forecasts with confidence intervals
+model Prediction {
+  id              String   @id @default(cuid())
+  stockId         String
+  predictionDate  DateTime // Date being predicted
+  predictedPrice  Float
+  lowerBound      Float    // Lower confidence interval
+  upperBound      Float    // Upper confidence interval
+  confidence      Float    // Confidence score 0-1
+  trend           String?  // "bullish", "bearish", "neutral"
+  modelVersion    String   @default("prophet-v1")
+  llmSummary      String?  // Human-readable insight from Groq
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  stock           Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  
+  @@index([stockId])
+  @@index([predictionDate])
+  @@index([createdAt])
+}
+
+// Agent execution logs for debugging
+model AgentLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  agentName   String   // "NewsFetcherAgent", "PredictionAgent", etc.
+  status      String   // "running", "completed", "failed"
+  input       Json?    // Input parameters
+  output      Json?    // Output data
+  error       String?  // Error message if failed
+  duration    Int?     // Execution time in milliseconds
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  
+  // Relations
+  user        User?    @relation(fields: [userId], references: [id])
+  
+  @@index([agentName])
+  @@index([status])
+  @@index([startedAt])
+}
+
+// Backtesting performance metrics
+model BacktestResult {
+  id              String   @id @default(cuid())
+  stockId         String
+  strategyName    String
+  startDate       DateTime
+  endDate         DateTime
+  initialCapital  Float
+  finalCapital    Float
+  totalReturn     Float    // Percentage
+  sharpeRatio     Float?
+  maxDrawdown     Float?
+  winRate         Float?
+  totalTrades     Int
+  profitableTrades Int
+  losingTrades    Int
+  equityCurve     Json     // Array of {date, value}
+  trades          Json     // Array of trade details
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  stock           Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  
+  @@index([stockId])
+  @@index([createdAt])
+}
+
+// Admin user model for admin panel authentication (separate from regular users)
+model AdminUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      String   @default("admin") // "admin" role only (no super admin)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastLogin DateTime?
+  
+  // Relations
+  notifications AdminNotification[]
+  auditLogs     AdminAuditLog[]
+}
+
+// System thresholds for monitoring and alerts
+model SystemThreshold {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  category    String   // "prediction", "performance", "alert"
+  value       Float
+  minValue    Float?
+  maxValue    Float?
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Admin notifications for system alerts
+model AdminNotification {
+  id          String   @id @default(cuid())
+  adminId     String?
+  type        String   // "alert", "warning", "info", "success"
+  title       String
+  message     String
+  category    String   // "system", "user", "prediction", "performance"
+  isRead      Boolean  @default(false)
+  priority    String   @default("normal") // "low", "normal", "high", "critical"
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  admin       AdminUser? @relation(fields: [adminId], references: [id])
+  
+  @@index([adminId])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// Audit log for admin actions
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  adminId     String
+  action      String   // "user_deactivate", "threshold_update", etc.
+  targetType  String?  // "user", "threshold", "notification", etc.
+  targetId    String?
+  details     Json?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  admin       AdminUser @relation(fields: [adminId], references: [id])
+  
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// System analytics snapshots
+model SystemAnalytics {
+  id                String   @id @default(cuid())
+  date              DateTime @default(now())
+  totalUsers        Int
+  activeUsers       Int
+  totalPredictions  Int
+  avgConfidence     Float?
+  systemUptime      Float?
+  apiResponseTime   Float?
+  errorRate         Float?
+  metadata          Json?
+  
+  @@index([date])
+}
+
+// Super admin users for highest-level platform control
+model SuperAdminUser {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  role        String   @default("super_admin")
+  isActive    Boolean  @default(true)
+  permissions Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastLogin   DateTime?
+
+  auditLogs   SuperAdminAuditLog[]
+}
+
+// Super admin audit logs for global-level actions
+model SuperAdminAuditLog {
+  id          String   @id @default(cuid())
+  superAdminId String
+  action      String
+  targetType  String?
+  targetId    String?
+  details     Json?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  superAdmin  SuperAdminUser @relation(fields: [superAdminId], references: [id])
+
+  @@index([superAdminId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// System module toggle control
+model SystemModule {
+  id          String   @id @default(cuid())
+  moduleKey   String   @unique
+  moduleName  String
+  description String?
+  isEnabled   Boolean  @default(true)
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([moduleKey])
+  @@index([isEnabled])
+}
+
+// Global system configuration values managed by super admin
+model GlobalConfig {
+  id          String   @id @default(cuid())
+  configKey   String   @unique
+  configValue Json
+  description String?
+  isActive    Boolean  @default(true)
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([configKey])
+  @@index([isActive])
+}
