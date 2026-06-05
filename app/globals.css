@@ -177,6 +177,14 @@ a {
   list-style-position: outside;
 }
 
+.chat-markdown ul {
+  list-style-type: disc;
+}
+
+.chat-markdown ol {
+  list-style-type: decimal;
+}
+
 .chat-markdown li {
   margin-bottom: 0.3rem;
 }

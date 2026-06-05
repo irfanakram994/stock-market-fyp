@@ -12,6 +12,14 @@ interface ChatMessage {
   timestamp: string;
 }
 
+function normalizeMarkdown(text: string) {
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/^(\d+)\)\s+/gm, "$1. ")
+    .replace(/^\s*[-*]\s*/gm, "- ")
+    .trim();
+}
+
 const QUICK_PROMPTS = [
   "Summarize today's trend for AAPL and key risks.",
   "Explain RSI and how to read overbought signals.",
@@ -86,7 +94,7 @@ export default function ChatbotPage() {
       const reply: ChatMessage = {
         id: `${Date.now()}-assistant`,
         role: "assistant",
-        content: data.data.message,
+        content: normalizeMarkdown(data.data.message),
         timestamp: new Date().toISOString(),
       };
 

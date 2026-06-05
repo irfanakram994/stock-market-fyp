@@ -101,8 +101,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loadCurrentUser = async () => {
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) {
+    const { data } = await supabase.auth.getSession();
+    const session = data.session;
+
+    if (!session?.user) {
       setUser(null);
       setAuthCookie(false);
       return;
@@ -118,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    setUser(mapSupabaseUser(data.user));
+    setUser(mapSupabaseUser(session.user));
     setAuthCookie(true);
   };
 
@@ -137,19 +139,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkUser();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // checkUser() already handles initial hydration on mount.
-      if (event === 'INITIAL_SESSION') {
-        return;
-      }
-
-      if (event === 'SIGNED_OUT' || !session?.user) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!session?.user) {
         setUser(null);
         setAuthCookie(false);
-        return;
-      }
-
-      if (event !== 'SIGNED_IN' && event !== 'TOKEN_REFRESHED' && event !== 'USER_UPDATED') {
         return;
       }
 

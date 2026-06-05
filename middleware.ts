@@ -7,7 +7,8 @@ export function middleware(request: NextRequest) {
 
   if (pathname.startsWith('/dashboard')) {
     const authCookie = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-    if (authCookie !== '1') {
+    // Avoid hard redirect on first load; client-side guard handles auth state.
+    if (authCookie && authCookie !== '1') {
       const redirectUrl = new URL('/', request.url);
       return NextResponse.redirect(redirectUrl);
     }
