@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, Mail, Lock, User, Facebook, Linkedin, Loader, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { resolveCurrentRole } from '@/lib/roleRouting';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -11,6 +13,7 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
+    const router = useRouter();
     const [isSignIn, setIsSignIn] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -121,6 +124,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             // Reset form
             setFormData({ email: '', password: '', name: '', confirmPassword: '' });
             onSuccess();
+
+            const roleResult = await resolveCurrentRole();
+            if (roleResult.success && roleResult.redirectTo) {
+                router.push(roleResult.redirectTo);
+            } else {
+                router.push('/dashboard');
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {

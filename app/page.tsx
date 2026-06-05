@@ -9,22 +9,38 @@ import {
 import AuthModal from '@/components/AuthModal';
 import Image from 'next/image';
 import { useAuth } from '@/lib/authContext';
+import { resolveCurrentRole } from '@/lib/roleRouting';
 
 export default function LandingPage() {
     const [showAuthModal, setShowAuthModal] = useState(false);
+    const [redirectResolved, setRedirectResolved] = useState(false);
     const router = useRouter();
     const { user, loading } = useAuth();
 
-    // Redirect to dashboard if user is already logged in
+    // Redirect to the right panel when the logged-in account is already authenticated
     useEffect(() => {
-        if (user && !loading) {
-            router.push('/dashboard');
+        if (loading) return;
+        if (!user) {
+            setRedirectResolved(false);
+            return;
         }
-    }, [user, loading, router]);
+        if (redirectResolved) return;
+
+        const redirectBasedOnRole = async () => {
+            const roleResult = await resolveCurrentRole();
+            if (roleResult.success && roleResult.redirectTo) {
+                router.push(roleResult.redirectTo);
+            } else {
+                router.push('/dashboard');
+            }
+            setRedirectResolved(true);
+        };
+
+        redirectBasedOnRole();
+    }, [user, loading, redirectResolved, router]);
 
     const handleAuthSuccess = () => {
         setShowAuthModal(false);
-        router.push('/dashboard');
     };
 
     return (

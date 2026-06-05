@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "node server.js",
     "lint": "next lint",
+    "create:user": "node scripts/create-default-user.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",

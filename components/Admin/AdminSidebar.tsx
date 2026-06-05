@@ -38,7 +38,7 @@ export default function AdminSidebar() {
 
     const handleSignOut = async () => {
         await signOut();
-        router.push('/admin/login');
+        router.push('/');
     };
 
     return (

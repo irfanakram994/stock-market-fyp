@@ -67,8 +67,17 @@ export function SuperAdminAuthProvider({ children }: { children: React.ReactNode
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setSuperAdmin(null);
+    try {
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      if (error) {
+        console.error('Supabase signOut error:', error.message);
+      }
+    } catch (error) {
+      console.error('Error signing out:', error);
+      throw error;
+    } finally {
+      setSuperAdmin(null);
+    }
   };
 
   const refreshSuperAdmin = async () => {

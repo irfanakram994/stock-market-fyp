@@ -80,15 +80,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   };
 
+  const clearCurrentSession = async () => {
+    try {
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      if (error) {
+        console.error('Supabase signOut error:', error);
+      }
+    } catch (error) {
+      console.error('Error signing out:', error);
+    } finally {
+      setUser(null);
+      setAuthCookie(false);
+      clearSupabaseBrowserStorage();
+    }
+  };
+
   const fetchDbProfile = async (accessToken: string, refreshToken?: string): Promise<User | null> => {
     try {
       const response = await fetch('/api/auth/user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ accessToken, refreshToken }),
       });
+
+      if (response.status === 401 || response.status === 403) {
+        await clearCurrentSession();
+        return null;
+      }
 
       if (!response.ok) return null;
 

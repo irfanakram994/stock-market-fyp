@@ -71,11 +71,15 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
-      setAdmin(null);
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      if (error) {
+        console.error('Supabase signOut error:', error.message);
+      }
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;
+    } finally {
+      setAdmin(null);
     }
   };
 

@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   LayoutDashboard,
   UserCog,
+  Users,
   Activity,
   BarChart3,
   Settings,
@@ -23,6 +24,7 @@ import { useSuperAdminAuth } from '@/lib/superAdminAuthContext';
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/super-admin' },
   { icon: UserCog, label: 'Admin Accounts', href: '/super-admin/admins' },
+  { icon: Users, label: 'Users', href: '/super-admin/users' },
   { icon: Activity, label: 'Activity Monitor', href: '/super-admin/activities' },
   { icon: BarChart3, label: 'System Analytics', href: '/super-admin/analytics' },
   { icon: Settings, label: 'Global Config', href: '/super-admin/config' },
@@ -40,7 +42,7 @@ export default function SuperAdminSidebar() {
 
   const handleSignOut = async () => {
     await signOut();
-    router.push('/super-admin/login');
+    router.push('/');
   };
 
   return (

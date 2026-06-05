@@ -59,6 +59,7 @@ export default function NotificationsPage() {
     });
     const [showFilters, setShowFilters] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [sendToUsers, setSendToUsers] = useState(false);
     const [newNotification, setNewNotification] = useState({
         type: 'info',
         title: '',
@@ -149,13 +150,20 @@ export default function NotificationsPage() {
     const handleCreateNotification = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const res = await adminFetch('/api/admin/notifications', {
+            const url = sendToUsers ? '/api/admin/user-notifications' : '/api/admin/notifications';
+            const body = {
+                ...newNotification,
+                ...(sendToUsers ? { broadcast: true } : {}),
+            };
+
+            const res = await adminFetch(url, {
                 method: 'POST',
-                body: JSON.stringify(newNotification),
+                body: JSON.stringify(body),
             });
             const data = await res.json();
             if (data.success) {
                 setShowCreateModal(false);
+                setSendToUsers(false);
                 setNewNotification({
                     type: 'info',
                     title: '',
@@ -540,6 +548,17 @@ export default function NotificationsPage() {
                                 </div>
                             </div>
 
+                            <div className="flex items-center gap-3 pt-4">
+                                <label className="inline-flex items-center gap-2 text-sm text-gray-300">
+                                    <input
+                                        type="checkbox"
+                                        checked={sendToUsers}
+                                        onChange={(e) => setSendToUsers(e.target.checked)}
+                                        className="h-4 w-4 rounded border-gray-600 bg-slate-900 text-orange-500 focus:ring-orange-500"
+                                    />
+                                    Send this notification to all regular users
+                                </label>
+                            </div>
                             <div className="flex space-x-3 pt-4">
                                 <button
                                     type="button"
