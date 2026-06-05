@@ -9,10 +9,12 @@ export default function VisualizationsPage() {
     const [stocks, setStocks] = useState<Stock[]>([]);
     const [predictions, setPredictions] = useState<Record<string, Prediction[]>>({});
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     useEffect(() => {
         async function loadData() {
             setLoading(true);
+            setLoadError(null);
             const stockRes = await fetchStocks();
             if (stockRes.success && stockRes.data) {
                 setStocks(stockRes.data);
@@ -29,6 +31,8 @@ export default function VisualizationsPage() {
                     })
                 );
                 setPredictions(predMap);
+            } else {
+                setLoadError(stockRes.error || 'Failed to load tracked stocks.');
             }
             setLoading(false);
         }
@@ -83,6 +87,11 @@ export default function VisualizationsPage() {
                 <h1 className="text-3xl font-bold mb-2">Advanced Visualizations</h1>
                 <p className="text-gray-400">Multi-stock comparisons and advanced analytics</p>
             </div>
+            {loadError && (
+                <div className="p-4 bg-amber-900/20 border border-amber-500 text-amber-200 rounded-lg">
+                    {loadError}
+                </div>
+            )}
 
             {/* Multi-Stock Comparison */}
             <div className="card">

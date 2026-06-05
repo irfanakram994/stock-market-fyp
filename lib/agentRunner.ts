@@ -13,6 +13,31 @@ import path from "path";
 const execAsync = promisify(exec);
 const AGENT_SCRIPT_PATH = path.join(process.cwd(), "apps", "agents", "main.py");
 const PROJECT_ROOT = process.cwd();
+const DOTENV_PATH = path.join(PROJECT_ROOT, ".env");
+
+function loadDotEnv(envPath: string) {
+  if (!fs.existsSync(envPath)) return;
+  const content = fs.readFileSync(envPath, "utf8");
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const idx = trimmed.indexOf("=");
+    if (idx < 0) continue;
+    const key = trimmed.slice(0, idx).trim();
+    let value = trimmed.slice(idx + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  }
+}
+
+loadDotEnv(DOTENV_PATH);
 
 // Python command: use venv path on Windows, python3 elsewhere
 const VENV_PYTHON_PATH = path.join(

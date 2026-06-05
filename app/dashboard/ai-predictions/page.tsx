@@ -34,6 +34,27 @@ export default function AIPredictionsPage() {
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const [user, setUser] = useState<{ id: string } | null>(null);
 
+  const availableSymbols = [
+    "AAPL","MSFT","NVDA","AMZN","GOOGL","META","TSLA","NFLX","AMD","INTC",
+    "AVGO","ORCL","CRM","ADBE","CSCO","QCOM","IBM","TXN","AMAT","MU",
+    "JPM","BAC","WFC","C","GS","MS","BLK","SCHW","AXP","USB",
+    "V","MA","PYPL","SQ","COF","BK","TFC","PNC","AIG","MET",
+    "JNJ","PFE","MRK","ABBV","LLY","TMO","DHR","ABT","BMY","CVS",
+    "UNH","CI","HUM","GILD","AMGN","ISRG","VRTX","REGN","SYK","MDT",
+    "XOM","CVX","COP","SLB","EOG","MPC","PSX","VLO","OXY","HAL",
+    "WMT","COST","HD","LOW","TGT","NKE","SBUX","MCD","KO","PEP",
+    "DIS","CMCSA","TMUS","VZ","T","CHTR","EA","TTWO","ROKU","SPOT",
+    "CAT","DE","GE","HON","MMM","BA","LMT","RTX","UPS","FDX",
+    "OGDC","PPL","POL","MARI","PSO",
+    "LUCK","DGKC","MLCF","FCCL","CHCC",
+    "FFC","EFERT","ENGRO","FATIMA","FFBL",
+    "HUBC","KEL","NCPL","KAPCO","PKGP",
+    "HBL","MCB","UBL","BAFL","MEBL",
+    "NBP","BOP","AKBL","FABL","HMB",
+    "SYS","TRG","AVN","NETSOL","OCTOPUS",
+    "SEARL","GLAXO","ABOT","AGP",
+  ];
+
   // Fetch current user on mount
   useEffect(() => {
     const fetchUser = async () => {
@@ -151,14 +172,16 @@ export default function AIPredictionsPage() {
   const latestPrediction = filteredPredictions[0];
   const insight = latestPrediction?.llmSummary;
 
-  // Get unique symbols for dropdown
-  const uniqueSymbols = Array.from(new Set(predictions.map((p) => p.symbol)));
+  // Get symbol options for prediction form and keep existing predicted stocks
+  const symbolOptions = Array.from(
+    new Set([...availableSymbols, ...predictions.map((p) => p.symbol)]),
+  );
 
   useEffect(() => {
-    if (uniqueSymbols.length > 0 && !uniqueSymbols.includes(symbol)) {
-      setSymbol(uniqueSymbols[0]);
+    if (symbolOptions.length > 0 && !symbolOptions.includes(symbol)) {
+      setSymbol(symbolOptions[0]);
     }
-  }, [uniqueSymbols, symbol]);
+  }, [symbolOptions, symbol]);
 
   const handleDownloadCSV = () => {
     if (filteredPredictions.length === 0) {
@@ -260,14 +283,17 @@ export default function AIPredictionsPage() {
       </div>
 
       {/* Symbol Selector */}
-      {uniqueSymbols.length > 0 && (
+      {symbolOptions.length > 0 && (
         <div className="card">
           <h3 className="text-lg font-bold mb-3">Select Stock</h3>
           <div className="flex flex-wrap gap-2">
-            {uniqueSymbols.map((sym) => (
+            {symbolOptions.map((sym) => (
               <button
                 key={sym}
-                onClick={() => setSelectedSymbol(sym)}
+                onClick={() => {
+                  setSelectedSymbol(sym);
+                  setSymbol(sym);
+                }}
                 className={`px-4 py-2 rounded-lg transition-colors ${
                   selectedSymbol === sym
                     ? "bg-primary text-white"
@@ -289,34 +315,24 @@ export default function AIPredictionsPage() {
             <label className="block text-sm font-medium text-gray-400 mb-2">
               Stock Symbol
             </label>
-            {uniqueSymbols.length > 0 ? (
-              <select
-                value={symbol}
-                onChange={(e) => {
-                  setSymbol(e.target.value);
-                  setSelectedSymbol(e.target.value);
-                }}
-                className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg focus:outline-none focus:border-primary transition-colors text-gray-200"
-              >
-                {uniqueSymbols.map((sym) => (
-                  <option
-                    key={sym}
-                    value={sym}
-                    className="bg-slate-950 text-white"
-                  >
-                    {sym}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type="text"
-                value={symbol}
-                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg focus:outline-none focus:border-primary transition-colors text-gray-200"
-                placeholder="e.g., AAPL"
-              />
-            )}
+            <select
+              value={symbol}
+              onChange={(e) => {
+                setSymbol(e.target.value);
+                setSelectedSymbol(e.target.value);
+              }}
+              className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg focus:outline-none focus:border-primary transition-colors text-gray-200"
+            >
+              {symbolOptions.map((sym) => (
+                <option
+                  key={sym}
+                  value={sym}
+                  className="bg-slate-950 text-white"
+                >
+                  {sym}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">

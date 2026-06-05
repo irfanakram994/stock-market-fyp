@@ -5,7 +5,7 @@ import { Search, TrendingUp, Loader } from 'lucide-react';
 import PriceChart from '@/components/Charts/PriceChart';
 import RSIChart from '@/components/Charts/RSIChart';
 import MACDChart from '@/components/Charts/MACDChart';
-import { fetchMarketData, fetchNewsLive, runPrediction, NewsItem } from '@/lib/api';
+import { fetchMarketData, fetchNews, fetchNewsLive, runPrediction, NewsItem } from '@/lib/api';
 
 interface PredictionData {
     date: string;
@@ -28,45 +28,91 @@ export default function StockAnalysisPage() {
     const [insight, setInsight] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
+    const [newsError, setNewsError] = useState<string | null>(null);
+
+    const predictionChartData = predictions
+        .map((p) => ({ date: p.date, price: p.predictedPrice }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    const displayChartData = priceChartData.length > 0 ? priceChartData : predictionChartData;
+    const chartSourceLabel = priceChartData.length > 0 ? 'Market price history' : predictionChartData.length > 0 ? 'Prediction history' : null;
 
     const loadData = useCallback(async (sym: string) => {
         setLoading(true);
         setLoadError(null);
+        setNewsError(null);
         const symUpper = sym.toUpperCase();
-        const [marketRes, newsRes, predRes] = await Promise.all([
-            fetchMarketData(symUpper),
-            fetchNewsLive(symUpper),
-            runPrediction(symUpper, 30),
-        ]);
 
-        if (marketRes.success && marketRes.data?.prices?.length) {
-            const prices = marketRes.data.prices
-                .map((p) => ({ date: p.date.split('T')[0] || p.date, price: p.price }))
-                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-            setPriceChartData(prices);
-            setLatestPrice(prices[prices.length - 1]?.price ?? null);
-            setStockName((marketRes.data.info as { name?: string })?.name || symUpper);
-        } else {
+        try {
+            const [marketRes, newsRes, predRes] = await Promise.all([
+                fetchMarketData(symUpper),
+                fetchNewsLive(symUpper),
+                runPrediction(symUpper, 30),
+            ]);
+
+            if (marketRes.success && marketRes.data?.prices?.length) {
+                const prices = marketRes.data.prices
+                    .map((p) => ({ date: p.date.split('T')[0] || p.date, price: p.price }))
+                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                setPriceChartData(prices);
+                setLatestPrice(prices[prices.length - 1]?.price ?? null);
+                setStockName((marketRes.data.info as { name?: string })?.name || symUpper);
+            } else {
+                setPriceChartData([]);
+                setLatestPrice(null);
+                setStockName(symUpper);
+                setLoadError(
+                    marketRes.error ||
+                    (marketRes.success ? 'No market price data available for this symbol.' : 'No market data'),
+                );
+            }
+
+            if (newsRes.success && newsRes.data) {
+                setNews(newsRes.data);
+            } else {
+                setNews([]);
+                const fallbackRes = await fetchNews(symUpper);
+                if (fallbackRes.success && fallbackRes.data) {
+                    setNews(fallbackRes.data);
+                    setNewsError(
+                        newsRes.error
+                            ? `Live news unavailable: ${newsRes.error}. Showing stored news.`
+                            : 'Live news unavailable; showing stored news.',
+                    );
+                } else {
+                    setNewsError(
+                        newsRes.error || fallbackRes.error || 'No news available for this symbol.',
+                    );
+                }
+            }
+
+            if (predRes.success && predRes.data) {
+                const pd = predRes.data as any;
+                setPredictions(pd.predictions || []);
+                setTrend(pd.trend || '');
+                setSentiment(pd.sentimentScore ?? null);
+                setInsight(pd.insight || '');
+            } else {
+                setPredictions([]);
+                setTrend('');
+                setSentiment(null);
+                setInsight('');
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setLoadError(`Failed to load stock data: ${message}`);
             setPriceChartData([]);
             setLatestPrice(null);
             setStockName(symUpper);
-            if (!marketRes.success) setLoadError(marketRes.error || 'No market data');
-        }
-        if (newsRes.success && newsRes.data) setNews(newsRes.data);
-        else setNews([]);
-        if (predRes.success && predRes.data) {
-            const pd = predRes.data as any;
-            setPredictions(pd.predictions || []);
-            setTrend(pd.trend || '');
-            setSentiment(pd.sentimentScore ?? null);
-            setInsight(pd.insight || '');
-        } else {
+            setNews([]);
+            setNewsError('Failed to load news. Please check your Python agents and API configuration.');
             setPredictions([]);
             setTrend('');
             setSentiment(null);
             setInsight('');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }, []);
 
     useEffect(() => {
@@ -137,12 +183,22 @@ export default function StockAnalysisPage() {
                     {/* Price Chart */}
                     <div className="card">
                         <h3 className="text-xl font-bold mb-4">Price History</h3>
-                        {priceChartData.length > 0 ? (
-                            <PriceChart data={priceChartData} />
+                        {displayChartData.length > 0 ? (
+                            <>
+                                <PriceChart data={displayChartData} />
+                                {chartSourceLabel && (
+                                    <p className="mt-3 text-sm text-gray-400">
+                                        Showing <span className="font-semibold">{chartSourceLabel}</span>.
+                                        {priceChartData.length === 0 && predictionChartData.length > 0 &&
+                                            ' Live market data was unavailable, so the chart uses the latest prediction data instead.'}
+                                    </p>
+                                )}
+                            </>
                         ) : (
                             <div className="h-[300px] flex flex-col items-center justify-center text-gray-400 gap-2">
                                 <p>No price data available for {searchSymbol}</p>
                                 <p className="text-sm">Ensure Python agents are installed and the market agent can reach Yahoo Finance.</p>
+                                {loadError && <p className="text-sm text-amber-400">{loadError}</p>}
                             </div>
                         )}
                     </div>
@@ -205,6 +261,9 @@ export default function StockAnalysisPage() {
                     {/* News Feed */}
                     <div className="card">
                         <h3 className="text-xl font-bold mb-4">Recent News</h3>
+                        {newsError && (
+                            <p className="text-sm text-amber-400 mb-4">{newsError}</p>
+                        )}
                         {news.length === 0 ? (
                             <p className="text-gray-400 text-center py-8">No news found for {searchSymbol}</p>
                         ) : (

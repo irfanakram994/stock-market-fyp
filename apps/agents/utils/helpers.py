@@ -5,6 +5,8 @@ Common functions for date handling, JSON serialization, logging, etc.
 
 import json
 import logging
+import math
+import numbers
 from datetime import datetime, timedelta
 from typing import Any, Dict
 import pandas as pd
@@ -26,9 +28,38 @@ def serialize_datetime(obj: Any) -> str:
         return obj.isoformat()
     raise TypeError(f"Type {type(obj)} not serializable")
 
+def _sanitize_json_value(value: Any) -> Any:
+    """Recursively convert non-JSON-safe values to JSON-safe types."""
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        return {k: _sanitize_json_value(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_sanitize_json_value(v) for v in value]
+    if isinstance(value, (np.integer, np.int64, np.int32, np.int16, np.int8)):
+        return int(value)
+    if isinstance(value, (np.floating, np.float64, np.float32, np.float16)):
+        numeric = float(value)
+        return numeric if math.isfinite(numeric) else None
+    if isinstance(value, np.bool_):
+        return bool(value)
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (datetime,)):
+        return serialize_datetime(value)
+    if isinstance(value, str):
+        return value
+    if isinstance(value, numbers.Real):
+        return value if math.isfinite(value) else None
+    if isinstance(value, (pd.Timestamp, pd.Timedelta)):
+        return str(value)
+    return value
+
+
 def to_json(data: Any) -> str:
-    """Convert data to JSON string with datetime handling"""
-    return json.dumps(data, default=serialize_datetime, indent=2)
+    """Convert data to JSON string with datetime handling and NaN sanitization."""
+    sanitized = _sanitize_json_value(data)
+    return json.dumps(sanitized, default=serialize_datetime, indent=2, allow_nan=False)
 
 def from_json(json_str: str) -> Any:
     """Parse JSON string to Python object"""
