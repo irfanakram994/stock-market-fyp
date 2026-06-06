@@ -105,14 +105,12 @@ async function ensureAppUser(id: string, email: string, name: string | null): Pr
       id: true,
       email: true,
       name: true,
+      gender: true,
+      profileImage: true,
     },
   });
 
-  return {
-    ...user,
-    gender: null,
-    profileImage: null,
-  };
+  return user;
 }
 
 async function handleUserRequest(request: NextRequest) {

@@ -170,7 +170,7 @@ export async function PUT(request: NextRequest) {
 
     if (imageDataUrl) {
       const { contentType, extension, buffer } = parseImageDataUrl(imageDataUrl);
-      const path = `${authData.user.id}/${Date.now()}.${extension}`;
+      const path = `${authData.data.user.id}/${Date.now()}.${extension}`;
 
       const { error: uploadError } = await supabaseServer.storage
         .from(PROFILE_BUCKET)
