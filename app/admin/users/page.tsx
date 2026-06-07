@@ -18,6 +18,7 @@ import {
 import { useAdminAuth } from '@/lib/adminAuthContext';
 import { adminFetch } from '@/lib/adminApi';
 import { useSnackbar } from '@/components/SnackbarProvider';
+import { StatusPill } from '@/components/Admin/AdminUI';
 
 interface User {
     id: string;
@@ -25,6 +26,8 @@ interface User {
     name: string | null;
     createdAt: string;
     updatedAt: string;
+    isBlocked: boolean;
+    blockedReason: string | null;
     _count: {
         predictions: number;
         agentLogs: number;
@@ -51,6 +54,7 @@ export default function UsersPage() {
     });
     const [search, setSearch] = useState('');
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [savingUserId, setSavingUserId] = useState<string | null>(null);
 
     const fetchUsers = async (page = 1, searchQuery = '') => {
         setLoading(true);
@@ -91,6 +95,7 @@ export default function UsersPage() {
     };
 
     const handleUserAction = async (userId: string, action: 'activate' | 'deactivate') => {
+        setSavingUserId(userId);
         try {
             const res = await adminFetch('/api/admin/users', {
                 method: 'PATCH',
@@ -106,6 +111,8 @@ export default function UsersPage() {
         } catch (error) {
             console.error('Error updating user:', error);
             showSnackbar({ variant: 'error', message: `Failed to ${action} user.` });
+        } finally {
+            setSavingUserId(null);
         }
     };
 
@@ -171,6 +178,9 @@ export default function UsersPage() {
                                 <th className="px-6 py-4 text-center text-sm font-semibold text-gray-400">
                                     Agent Tasks
                                 </th>
+                                <th className="px-6 py-4 text-center text-sm font-semibold text-gray-400">
+                                    Status
+                                </th>
                                 <th className="px-6 py-4 text-right text-sm font-semibold text-gray-400">
                                     Actions
                                 </th>
@@ -225,6 +235,9 @@ export default function UsersPage() {
                                             </span>
                                         </div>
                                     </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <StatusPill active={!user.isBlocked} activeText="Active" inactiveText="Blocked" />
+                                    </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center justify-end space-x-2">
                                             <button
@@ -236,12 +249,13 @@ export default function UsersPage() {
                                             </button>
                                             <button
                                                 onClick={() =>
-                                                    handleUserAction(user.id, 'deactivate')
+                                                    handleUserAction(user.id, user.isBlocked ? 'activate' : 'deactivate')
                                                 }
-                                                className="p-2 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
-                                                title="Deactivate User"
+                                                disabled={savingUserId === user.id}
+                                                className={`p-2 rounded-lg text-gray-400 transition-colors ${user.isBlocked ? 'hover:bg-green-500/20 hover:text-green-400' : 'hover:bg-red-500/20 hover:text-red-400'}`}
+                                                title={user.isBlocked ? 'Unblock User' : 'Block User'}
                                             >
-                                                <UserX className="w-4 h-4" />
+                                                {savingUserId === user.id ? <Loader className="w-4 h-4 animate-spin" /> : user.isBlocked ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
                                             </button>
                                         </div>
                                     </td>
@@ -337,17 +351,29 @@ export default function UsersPage() {
                                         {selectedUser._count.agentLogs}
                                     </p>
                                 </div>
+                                <div className="bg-slate-900/50 rounded-lg p-4">
+                                    <p className="text-gray-400 text-sm">Status</p>
+                                    <div className="mt-1">
+                                        <StatusPill active={!selectedUser.isBlocked} activeText="Active" inactiveText="Blocked" />
+                                    </div>
+                                </div>
+                                <div className="bg-slate-900/50 rounded-lg p-4">
+                                    <p className="text-gray-400 text-sm">Block Reason</p>
+                                    <p className="text-white font-semibold">
+                                        {selectedUser.blockedReason || '-'}
+                                    </p>
+                                </div>
                             </div>
 
                             <div className="flex space-x-3 pt-4">
                                 <button
                                     onClick={() => {
-                                        handleUserAction(selectedUser.id, 'deactivate');
+                                        handleUserAction(selectedUser.id, selectedUser.isBlocked ? 'activate' : 'deactivate');
                                         setSelectedUser(null);
                                     }}
-                                    className="flex-1 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                                    className={`flex-1 py-2 rounded-lg transition-colors ${selectedUser.isBlocked ? 'bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30' : 'bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30'}`}
                                 >
-                                    Deactivate User
+                                    {selectedUser.isBlocked ? 'Unblock User' : 'Block User'}
                                 </button>
                                 <button
                                     onClick={() => setSelectedUser(null)}

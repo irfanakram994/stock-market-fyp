@@ -3,6 +3,7 @@ import { runAgentSync, runPredictionAgent } from "@/lib/agentRunner";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/userAuth";
 import { randomUUID } from "crypto";
+import { requireModuleEnabled } from "@/lib/moduleGuard";
 
 /** POST /api/agents/run - Execute Python agents (Prophet, OpenAI/Groq LLM, News) - NO DB */
 export async function POST(request: NextRequest) {
@@ -18,6 +19,8 @@ export async function POST(request: NextRequest) {
         { status: 401 },
       );
     }
+    const disabled = await requireModuleEnabled("multi_agent_system");
+    if (disabled) return disabled;
 
     const body = await request.json();
     const { agent, symbol, forecastDays = 30 } = body;

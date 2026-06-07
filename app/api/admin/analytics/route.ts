@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { extractBearerToken, verifyAdminSession } from '@/lib/adminAuth';
+import { requireModuleEnabled } from '@/lib/moduleGuard';
 
 // GET - Fetch system analytics
 export async function GET(request: NextRequest) {
@@ -13,6 +14,10 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       );
     }
+    const adminDisabled = await requireModuleEnabled('admin_panel');
+    if (adminDisabled) return adminDisabled;
+    const analyticsDisabled = await requireModuleEnabled('analytics_module');
+    if (analyticsDisabled) return analyticsDisabled;
 
     const searchParams = request.nextUrl.searchParams;
     const days = parseInt(searchParams.get('days') || '30');
@@ -222,6 +227,10 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+    const adminDisabled = await requireModuleEnabled('admin_panel');
+    if (adminDisabled) return adminDisabled;
+    const analyticsDisabled = await requireModuleEnabled('analytics_module');
+    if (analyticsDisabled) return analyticsDisabled;
 
     const [
       totalUsers,

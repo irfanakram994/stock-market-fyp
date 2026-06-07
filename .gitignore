@@ -48,6 +48,8 @@ Thumbs.db
 # Logs
 *.log
 logs/
+!app/super-admin/logs/
+!app/super-admin/logs/page.tsx
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

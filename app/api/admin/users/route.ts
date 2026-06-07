@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { extractBearerToken, verifyAdminSession, createAuditLog } from '@/lib/adminAuth';
+import { requireModuleEnabled } from '@/lib/moduleGuard';
 
 // GET - List all users with optional filters
 export async function GET(request: NextRequest) {
@@ -14,6 +15,8 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       );
     }
+    const disabled = await requireModuleEnabled('admin_panel');
+    if (disabled) return disabled;
 
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -55,6 +58,8 @@ export async function GET(request: NextRequest) {
           name: true,
           createdAt: true,
           updatedAt: true,
+          isBlocked: true,
+          blockedReason: true,
           _count: {
             select: {
               predictions: true,
@@ -97,6 +102,8 @@ export async function PATCH(request: NextRequest) {
         { status: 401 }
       );
     }
+    const disabled = await requireModuleEnabled('admin_panel');
+    if (disabled) return disabled;
 
     const { userId, action } = await request.json();
 

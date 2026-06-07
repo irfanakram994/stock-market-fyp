@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Loader, ToggleLeft } from 'lucide-react';
 import { superAdminFetch } from '@/lib/superAdminApi';
+import { useSnackbar } from '@/components/SnackbarProvider';
+import { AdminPageHeader, EmptyState, LoadingState, Panel, StatusPill } from '@/components/Admin/AdminUI';
 
 interface ModuleRow {
   id: string;
@@ -14,47 +17,94 @@ interface ModuleRow {
 }
 
 export default function SuperAdminModulesPage() {
+  const { showSnackbar } = useSnackbar();
   const [rows, setRows] = useState<ModuleRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   const load = async () => {
-    const res = await superAdminFetch('/api/super-admin/modules');
-    const data = await res.json();
-    if (data.success) setRows(data.data);
+    try {
+      const res = await superAdminFetch('/api/super-admin/modules');
+      const data = await res.json();
+      if (data.success) {
+        setRows(data.data);
+      } else {
+        showSnackbar({ variant: 'error', message: data.error || 'Failed to load modules.' });
+      }
+    } catch (error) {
+      console.error('Error loading modules:', error);
+      showSnackbar({ variant: 'error', message: 'Failed to load modules.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     load();
   }, []);
 
-  const toggle = async (id: string, isEnabled: boolean) => {
-    await superAdminFetch('/api/super-admin/modules', {
-      method: 'PATCH',
-      body: JSON.stringify({ id, isEnabled: !isEnabled }),
-    });
-    load();
+  const toggle = async (row: ModuleRow) => {
+    setSavingId(row.id);
+    setRows((current) => current.map((item) => (item.id === row.id ? { ...item, isEnabled: !row.isEnabled } : item)));
+    try {
+      const res = await superAdminFetch('/api/super-admin/modules', {
+        method: 'PATCH',
+        body: JSON.stringify({ id: row.id, isEnabled: !row.isEnabled }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showSnackbar({ variant: 'success', message: `${row.moduleName} ${row.isEnabled ? 'disabled' : 'enabled'} successfully.` });
+        await load();
+      } else {
+        showSnackbar({ variant: 'error', message: data.error || 'Failed to update module.' });
+        await load();
+      }
+    } catch (error) {
+      console.error('Error toggling module:', error);
+      showSnackbar({ variant: 'error', message: 'Failed to update module.' });
+      await load();
+    } finally {
+      setSavingId(null);
+    }
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Module Control</h1>
-        <p className="text-gray-400">Enable or disable major system modules when required</p>
-      </div>
+      <AdminPageHeader
+        icon={ToggleLeft}
+        title="Module Control"
+        description="Enable or disable major platform capabilities. Disabled modules return a clear access message from guarded APIs."
+      />
 
-      <div className="space-y-3">
-        {rows.map((row) => (
-          <div key={row.id} className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-white font-medium">{row.moduleName}</p>
-              <p className="text-gray-400 text-sm">{row.description || row.moduleKey}</p>
-              <p className="text-xs text-gray-500 mt-1">Updated by {row.updatedBy || 'N/A'} • {new Date(row.updatedAt).toLocaleString()}</p>
-            </div>
-            <button onClick={() => toggle(row.id, row.isEnabled)} className={`px-3 py-1 rounded text-xs ${row.isEnabled ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-              {row.isEnabled ? 'Enabled' : 'Disabled'}
-            </button>
-          </div>
-        ))}
-      </div>
+      {loading ? (
+        <LoadingState label="Loading modules..." />
+      ) : rows.length === 0 ? (
+        <EmptyState title="No modules configured" description="Default modules will be created automatically by the API." />
+      ) : (
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {rows.map((row) => (
+            <Panel key={row.id} className="flex items-start justify-between gap-4 p-5">
+              <div>
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-white">{row.moduleName}</p>
+                  <span className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-400">{row.moduleKey}</span>
+                </div>
+                <p className="text-sm leading-6 text-slate-400">{row.description || 'No description'}</p>
+                <p className="mt-3 text-xs text-slate-500">
+                  Updated by {row.updatedBy || 'N/A'} - {new Date(row.updatedAt).toLocaleString()}
+                </p>
+              </div>
+              <button onClick={() => toggle(row)} disabled={savingId === row.id} className="disabled:cursor-not-allowed disabled:opacity-60">
+                {savingId === row.id ? (
+                  <Loader className="h-4 w-4 animate-spin text-cyan-300" />
+                ) : (
+                  <StatusPill active={row.isEnabled} activeText="Enabled" inactiveText="Disabled" />
+                )}
+              </button>
+            </Panel>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

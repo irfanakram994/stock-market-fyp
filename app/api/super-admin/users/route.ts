@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { extractBearerToken, verifySuperAdminSession } from '@/lib/superAdminAuth';
+import { createSuperAdminAuditLog, extractBearerToken, verifySuperAdminSession } from '@/lib/superAdminAuth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -44,6 +44,8 @@ export async function GET(request: NextRequest) {
           name: true,
           createdAt: true,
           updatedAt: true,
+          isBlocked: true,
+          blockedReason: true,
           _count: {
             select: {
               stocks: true,
@@ -68,5 +70,54 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching super-admin users:', error);
     return NextResponse.json({ success: false, error: 'Failed to fetch users' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const accessToken = extractBearerToken(request.headers.get('authorization'));
+    const session = await verifySuperAdminSession({ accessToken });
+    if (!session.success || !session.superAdmin) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { userId, action, blockedReason } = await request.json();
+    if (!userId || !action || !['block', 'unblock', 'deactivate', 'activate'].includes(String(action))) {
+      return NextResponse.json({ success: false, error: 'User ID and a valid action are required' }, { status: 400 });
+    }
+
+    const shouldBlock = action === 'block' || action === 'deactivate';
+    const user = await prisma.user.findUnique({ where: { id: String(userId) } });
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: String(userId) },
+      data: {
+        isBlocked: shouldBlock,
+        blockedReason: shouldBlock
+          ? String(blockedReason || 'Account blocked by Super Admin.')
+          : null,
+      },
+    });
+
+    await createSuperAdminAuditLog(
+      session.superAdmin.id,
+      shouldBlock ? 'user_block' : 'user_unblock',
+      'user',
+      String(userId),
+      { email: user.email, previousBlocked: user.isBlocked },
+      request.headers.get('x-forwarded-for') || 'unknown'
+    );
+
+    return NextResponse.json({
+      success: true,
+      message: shouldBlock ? 'User blocked successfully' : 'User unblocked successfully',
+      data: updated,
+    });
+  } catch (error) {
+    console.error('Error updating super-admin user:', error);
+    return NextResponse.json({ success: false, error: 'Failed to update user' }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireUser } from '@/lib/userAuth';
+import { requireModuleEnabled } from '@/lib/moduleGuard';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,8 @@ export async function GET(request: NextRequest) {
         if (!user) {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
+        const disabled = await requireModuleEnabled('user_panel');
+        if (disabled) return disabled;
 
         const [predictions, agentLogs, predictedStocks] = await Promise.all([
             prisma.prediction.findMany({

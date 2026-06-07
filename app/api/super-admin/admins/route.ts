@@ -50,19 +50,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Email is required' }, { status: 400 });
     }
 
-    if (password) {
-      const createAuthResult = await supabaseServer.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: { name: name || null },
-      });
-      if (createAuthResult.error && !createAuthResult.error.message.toLowerCase().includes('already')) {
-        return NextResponse.json(
-          { success: false, error: `Supabase user creation failed: ${createAuthResult.error.message}` },
-          { status: 400 }
-        );
-      }
+    if (!password || String(password).length < 8) {
+      return NextResponse.json({ success: false, error: 'Password is required and must be at least 8 characters' }, { status: 400 });
+    }
+
+    const createAuthResult = await supabaseServer.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { name: name || null },
+    });
+    if (createAuthResult.error && !createAuthResult.error.message.toLowerCase().includes('already')) {
+      return NextResponse.json(
+        { success: false, error: `Supabase user creation failed: ${createAuthResult.error.message}` },
+        { status: 400 }
+      );
     }
 
     const admin = await prisma.adminUser.create({

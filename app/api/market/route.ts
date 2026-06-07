@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 import { runAgentSync } from '@/lib/agentRunner';
+import { requireModuleEnabled } from '@/lib/moduleGuard';
 
 interface MarketCacheEntry {
     expiresAt: number;
@@ -20,6 +21,9 @@ const marketCache = new Map<string, MarketCacheEntry>();
  */
 export async function GET(request: NextRequest) {
     try {
+        const disabled = await requireModuleEnabled('multi_agent_system');
+        if (disabled) return disabled;
+
         const { searchParams } = new URL(request.url);
         const symbol = searchParams.get('symbol')?.trim().toUpperCase();
 

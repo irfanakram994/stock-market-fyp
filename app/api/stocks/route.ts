@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireUser } from '@/lib/userAuth';
+import { requireModuleEnabled } from '@/lib/moduleGuard';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,8 @@ export async function GET(request: NextRequest) {
                 { status: 401 }
             );
         }
+        const disabled = await requireModuleEnabled('user_panel');
+        if (disabled) return disabled;
 
         const predictedStocks = await prisma.prediction.findMany({
             where: { userId: user.id },
@@ -104,6 +107,8 @@ export async function POST(request: NextRequest) {
                 { status: 401 }
             );
         }
+        const disabled = await requireModuleEnabled('user_panel');
+        if (disabled) return disabled;
 
         const body = await request.json();
         const { symbol, name, sector, industry, description } = body;

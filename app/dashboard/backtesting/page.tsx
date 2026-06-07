@@ -32,12 +32,29 @@ export default function BacktestingPage() {
     }, []);
 
     const handleRunBacktest = async () => {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const capital = Number(initialCapital);
+
+        if (!symbol.trim()) {
+            showSnackbar({ variant: 'warning', message: 'Enter a stock symbol before running a backtest.' });
+            return;
+        }
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
+            showSnackbar({ variant: 'warning', message: 'Choose a valid start date before the end date.' });
+            return;
+        }
+        if (!Number.isFinite(capital) || capital <= 0) {
+            showSnackbar({ variant: 'warning', message: 'Initial capital must be greater than 0.' });
+            return;
+        }
+
         setRunning(true);
         const snackbarId = showSnackbar({
             variant: 'loading',
             message: `Running ${symbol} backtest...`,
         });
-        const res = await runBacktest(symbol, startDate, endDate, initialCapital);
+        const res = await runBacktest(symbol.trim().toUpperCase(), startDate, endDate, capital);
         if (res.success) {
             updateSnackbar(snackbarId, { variant: 'success', message: res.message || 'Backtest created.' });
             await loadResults(); // Refresh results
@@ -48,8 +65,8 @@ export default function BacktestingPage() {
     };
 
     const latestResult = results[0]; // Most recent
-    const equityCurve = latestResult?.equityCurve || [];
-    const trades = latestResult?.trades || [];
+    const equityCurve = Array.isArray(latestResult?.equityCurve) ? latestResult.equityCurve : [];
+    const trades = Array.isArray(latestResult?.trades) ? latestResult.trades : [];
 
     return (
         <div className="space-y-6">
@@ -57,6 +74,14 @@ export default function BacktestingPage() {
             <div>
                 <h1 className="text-3xl font-bold mb-2">Backtesting</h1>
                 <p className="text-gray-400">Test your trading strategies with historical data</p>
+            </div>
+
+            <div className="card border border-primary/20 bg-primary/5">
+                <h2 className="text-lg font-bold mb-2">What backtesting does here</h2>
+                <p className="text-sm leading-relaxed text-gray-300">
+                    Backtesting replays historical prices for your selected stock and simulates a moving-average crossover strategy.
+                    It estimates capital growth, trade results, win rate, max drawdown, and risk-adjusted performance before a strategy is trusted live.
+                </p>
             </div>
 
             {/* Configuration */}
@@ -132,15 +157,15 @@ export default function BacktestingPage() {
                         </div>
                         <div className="card">
                             <div className="text-sm text-gray-400 mb-1">Sharpe Ratio</div>
-                            <div className="text-2xl font-bold">{latestResult.sharpeRatio?.toFixed(2) || '—'}</div>
+                            <div className="text-2xl font-bold">{latestResult.sharpeRatio != null ? latestResult.sharpeRatio.toFixed(2) : '-'}</div>
                         </div>
                         <div className="card">
                             <div className="text-sm text-gray-400 mb-1">Max Drawdown</div>
-                            <div className="text-2xl font-bold text-red-400">{latestResult.maxDrawdown ? `${latestResult.maxDrawdown.toFixed(1)}%` : '—'}</div>
+                            <div className="text-2xl font-bold text-red-400">{latestResult.maxDrawdown != null ? `${latestResult.maxDrawdown.toFixed(1)}%` : '-'}</div>
                         </div>
                         <div className="card">
                             <div className="text-sm text-gray-400 mb-1">Win Rate</div>
-                            <div className="text-2xl font-bold text-green-400">{latestResult.winRate ? `${latestResult.winRate.toFixed(1)}%` : '—'}</div>
+                            <div className="text-2xl font-bold text-green-400">{latestResult.winRate != null ? `${latestResult.winRate.toFixed(1)}%` : '-'}</div>
                         </div>
                     </div>
 

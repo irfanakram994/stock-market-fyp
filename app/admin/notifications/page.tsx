@@ -60,6 +60,8 @@ export default function NotificationsPage() {
     const [showFilters, setShowFilters] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [sendToUsers, setSendToUsers] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [createError, setCreateError] = useState('');
     const [newNotification, setNewNotification] = useState({
         type: 'info',
         title: '',
@@ -149,6 +151,9 @@ export default function NotificationsPage() {
 
     const handleCreateNotification = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (creating) return;
+        setCreating(true);
+        setCreateError('');
         try {
             const url = sendToUsers ? '/api/admin/user-notifications' : '/api/admin/notifications';
             const body = {
@@ -171,10 +176,15 @@ export default function NotificationsPage() {
                     category: 'system',
                     priority: 'normal',
                 });
-                fetchNotifications(1);
+                await fetchNotifications(1);
+            } else {
+                setCreateError(data.error || 'Failed to create notification.');
             }
         } catch (error) {
             console.error('Error creating notification:', error);
+            setCreateError('Network error while creating notification.');
+        } finally {
+            setCreating(false);
         }
     };
 
@@ -333,6 +343,15 @@ export default function NotificationsPage() {
                 )}
             </div>
 
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+                <h2 className="text-white font-semibold mb-2">Notification Types and Categories</h2>
+                <div className="grid md:grid-cols-3 gap-3 text-sm text-gray-300">
+                    <p><span className="text-blue-300 font-medium">Categories:</span> system means platform status, user means account messages, prediction means forecast/model messages, and performance means uptime or response health.</p>
+                    <p><span className="text-blue-300 font-medium">Types:</span> info is neutral, success confirms completion, warning needs attention, and alert is urgent.</p>
+                    <p><span className="text-blue-300 font-medium">Priority:</span> low, normal, high, and critical decide how urgent the notification is.</p>
+                </div>
+            </div>
+
             {/* Notifications List */}
             <div className="space-y-4">
                 {loading ? (
@@ -455,6 +474,11 @@ export default function NotificationsPage() {
                         </div>
 
                         <form onSubmit={handleCreateNotification} className="space-y-4">
+                            {createError && (
+                                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                                    {createError}
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-sm text-gray-400 mb-1">Title</label>
                                 <input
@@ -569,9 +593,10 @@ export default function NotificationsPage() {
                                 </button>
                                 <button
                                     type="submit"
+                                    disabled={creating}
                                     className="flex-1 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-lg"
                                 >
-                                    Create
+                                    {creating ? 'Sending...' : 'Create'}
                                 </button>
                             </div>
                         </form>

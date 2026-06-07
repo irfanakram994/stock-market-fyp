@@ -10,7 +10,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-  LabelList,
 } from "recharts";
 
 const defaultData = [
@@ -84,6 +83,20 @@ interface ForecastChartProps {
   }[];
 }
 
+const formatUsd = (value: number, decimals = 2) =>
+  `$${value.toLocaleString("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })}`;
+
+const getNiceStep = (range: number) => {
+  const roughStep = range / 6;
+  const power = Math.pow(10, Math.floor(Math.log10(Math.max(roughStep, 1))));
+  const normalized = roughStep / power;
+  const multiplier = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  return multiplier * power;
+};
+
 const renderLegend = () => (
   <div
     style={{
@@ -91,7 +104,7 @@ const renderLegend = () => (
       justifyContent: "center",
       flexWrap: "wrap",
       gap: 16,
-      marginBottom: 14,
+      marginBottom: 10,
       color: "#cbd5e1",
       fontSize: 13,
     }}
@@ -139,38 +152,67 @@ const renderLegend = () => (
 export default function ForecastChart({
   data = defaultData,
 }: ForecastChartProps) {
-  const lastPredictedIndex = data.length - 1;
+  const isValidPrice = (value: number | null): value is number =>
+    typeof value === "number" && Number.isFinite(value) && value > 0 && value < 1000000;
 
-  const chartData = data.map((point) => ({
-    ...point,
-    confidence:
-      point.lower != null && point.upper != null
-        ? [point.lower, point.upper]
-        : null,
-  }));
+  const rawValues = data.flatMap((point) =>
+    [point.actual, point.predicted, point.lower, point.upper].filter(isValidPrice) as number[],
+  );
+  const sortedValues = rawValues.slice().sort((a, b) => a - b);
+  const median = sortedValues.length ? sortedValues[Math.floor(sortedValues.length / 2)] : 0;
+  const values = rawValues.filter((value) => !median || (value >= median * 0.35 && value <= median * 2.85));
+  const predictedValues = data.map((point) => point.predicted).filter(isValidPrice) as number[];
+  const anchor = predictedValues[predictedValues.length - 1] || median || values[0] || 100;
+  const minValue = values.length ? Math.min(...values) : anchor * 0.75;
+  const maxValue = values.length ? Math.max(...values) : anchor * 1.25;
+  const padding = Math.max((maxValue - minValue) * 0.28, anchor * 0.18, 2);
+  const roughMin = Math.max(0, minValue - padding);
+  const roughMax = maxValue + padding;
+  const niceStep = getNiceStep(Math.max(roughMax - roughMin, 4));
+  const yMin = Math.max(0, Math.floor(roughMin / niceStep) * niceStep);
+  let yMax = Math.ceil(roughMax / niceStep) * niceStep;
+  if (yMax <= yMin) yMax = yMin + niceStep * 6;
+  const tickCount = Math.min(8, Math.max(4, Math.floor((yMax - yMin) / niceStep) + 1));
+  const ticks = Array.from({ length: tickCount }, (_, index) => yMin + index * niceStep).filter((value) => value <= yMax);
 
-  const renderPredictedLabel = ({ x, y, value, index }: any) => {
-    if (value == null || index !== lastPredictedIndex) {
-      return null;
-    }
+  const chartData = data.map((point) => {
+    const actual = isValidPrice(point.actual) ? point.actual : null;
+    const predicted =
+      isValidPrice(point.predicted) && (!median || (point.predicted >= median * 0.2 && point.predicted <= median * 5))
+        ? point.predicted
+        : null;
+    const lower =
+      isValidPrice(point.lower) && (!median || (point.lower >= median * 0.2 && point.lower <= median * 5))
+        ? point.lower
+        : null;
+    const upper =
+      isValidPrice(point.upper) && (!median || (point.upper >= median * 0.2 && point.upper <= median * 5))
+        ? point.upper
+        : null;
 
-    const formattedValue = Number(value).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 6,
-    });
-
-    return (
-      <text x={x} y={y - 10} fill="#0ea5e9" fontSize={12} textAnchor="middle">
-        ${formattedValue}
-      </text>
-    );
-  };
+    return {
+      ...point,
+      actual,
+      predicted,
+      lower,
+      upper,
+      confidence: lower != null && upper != null ? [lower, upper] : null,
+    };
+  });
+  const lastPrediction = [...chartData].reverse().find((point) => point.predicted != null)?.predicted;
 
   return (
+    <div className="w-full">
+      {lastPrediction != null && (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-cyan-400/15 bg-cyan-500/5 px-3 py-2">
+          <span className="text-sm text-slate-400">Latest predicted price</span>
+          <span className="text-sm font-semibold text-cyan-200">{formatUsd(Number(lastPrediction))}</span>
+        </div>
+      )}
     <ResponsiveContainer width="100%" height={420}>
       <ComposedChart
         data={chartData}
-        margin={{ top: 20, right: 30, left: 40, bottom: 75 }}
+        margin={{ top: 18, right: 22, left: 22, bottom: 72 }}
       >
         <defs>
           <linearGradient id="colorConfidence" x1="0" y1="0" x2="0" y2="1">
@@ -187,7 +229,7 @@ export default function ForecastChart({
           label={{
             value: "Date",
             position: "insideBottom",
-            dy: 16,
+            dy: 18,
             fill: "#cbd5e1",
             fontSize: 12,
           }}
@@ -195,13 +237,15 @@ export default function ForecastChart({
         <YAxis
           stroke="#94a3b8"
           tick={{ fill: "#94a3b8", fontSize: 12 }}
-          tickFormatter={(value) => `$${value}`}
-          domain={["dataMin - 5", "dataMax + 5"]}
+          tickFormatter={(value) => formatUsd(Number(value), 0)}
+          domain={[yMin, yMax]}
+          ticks={ticks}
+          width={86}
           label={{
             value: "Price (USD)",
             angle: -90,
             position: "insideLeft",
-            dx: -20,
+            dx: -12,
             dy: 0,
             fill: "#cbd5e1",
             fontSize: 12,
@@ -211,10 +255,7 @@ export default function ForecastChart({
           formatter={(value: any, name: string) => {
             if (typeof value === "number") {
               return [
-                `$${value.toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 6,
-                })}`,
+                formatUsd(value),
                 name,
               ];
             }
@@ -291,10 +332,9 @@ export default function ForecastChart({
           dot={{ fill: "#0ea5e9", r: 5 }}
           activeDot={{ r: 7 }}
           connectNulls
-        >
-          <LabelList dataKey="predicted" content={renderPredictedLabel} />
-        </Line>
+        />
       </ComposedChart>
     </ResponsiveContainer>
+    </div>
   );
 }

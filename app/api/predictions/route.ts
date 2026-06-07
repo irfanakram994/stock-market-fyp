@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/userAuth";
 import { randomUUID } from "crypto";
 import type { Prisma } from "@prisma/client";
+import { requireModuleEnabled } from "@/lib/moduleGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,8 @@ export async function GET(request: NextRequest) {
         { status: 401 },
       );
     }
+    const disabled = await requireModuleEnabled("forecasting_module");
+    if (disabled) return disabled;
 
     const { searchParams } = new URL(request.url);
     const symbol = searchParams.get("symbol");
@@ -78,6 +81,8 @@ export async function POST(request: NextRequest) {
         { status: 401 },
       );
     }
+    const disabled = await requireModuleEnabled("forecasting_module");
+    if (disabled) return disabled;
 
     const body = await request.json();
     const { symbol, forecastDays = 30 } = body;

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { extractBearerToken, verifyAdminSession } from '@/lib/adminAuth';
+import { requireModuleEnabled } from '@/lib/moduleGuard';
+
+export const dynamic = 'force-dynamic';
 
 // GET - List audit logs
 export async function GET(request: NextRequest) {
@@ -13,6 +16,8 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       );
     }
+    const disabled = await requireModuleEnabled('admin_panel');
+    if (disabled) return disabled;
 
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');

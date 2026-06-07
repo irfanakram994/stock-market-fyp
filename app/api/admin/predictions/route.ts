@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { extractBearerToken, verifyAdminSession } from '@/lib/adminAuth';
+import { requireModuleEnabled } from '@/lib/moduleGuard';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,10 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       );
     }
+    const adminDisabled = await requireModuleEnabled('admin_panel');
+    if (adminDisabled) return adminDisabled;
+    const forecastingDisabled = await requireModuleEnabled('forecasting_module');
+    if (forecastingDisabled) return forecastingDisabled;
 
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
@@ -58,13 +63,6 @@ export async function GET(request: NextRequest) {
               symbol: true,
               name: true,
               sector: true,
-            },
-          },
-          user: {
-            select: {
-              id: true,
-              email: true,
-              name: true,
             },
           },
         },

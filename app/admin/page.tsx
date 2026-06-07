@@ -9,11 +9,12 @@ import {
     XCircle,
     Clock,
     BarChart3,
-    Loader,
     RefreshCw,
 } from 'lucide-react';
 import { useAdminAuth } from '@/lib/adminAuthContext';
 import { adminFetch } from '@/lib/adminApi';
+import { useSnackbar } from '@/components/SnackbarProvider';
+import { AdminPageHeader, LoadingState } from '@/components/Admin/AdminUI';
 
 interface DashboardStats {
     users: {
@@ -118,6 +119,7 @@ function StatCard({
 
 export default function AdminDashboardPage() {
     const { admin } = useAdminAuth();
+    const { showSnackbar } = useSnackbar();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -128,9 +130,12 @@ export default function AdminDashboardPage() {
             const data = await res.json();
             if (data.success) {
                 setStats(data.data);
+            } else {
+                showSnackbar({ variant: 'error', message: data.error || 'Failed to load dashboard data.' });
             }
         } catch (error) {
             console.error('Error fetching stats:', error);
+            showSnackbar({ variant: 'error', message: 'Failed to load dashboard data.' });
         }
     };
 
@@ -150,11 +155,7 @@ export default function AdminDashboardPage() {
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader className="w-8 h-8 animate-spin text-orange-500" />
-            </div>
-        );
+        return <LoadingState label="Loading admin dashboard..." />;
     }
 
     if (!stats) {
@@ -173,12 +174,11 @@ export default function AdminDashboardPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
-                    <p className="text-gray-400">System overview and recent activity</p>
-                </div>
+            <AdminPageHeader
+                title="Admin Dashboard"
+                description="System overview, health indicators, and recent platform activity."
+                icon={BarChart3}
+                actions={
                 <button
                     onClick={handleRefresh}
                     disabled={refreshing}
@@ -187,7 +187,8 @@ export default function AdminDashboardPage() {
                     <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                     <span>Refresh</span>
                 </button>
-            </div>
+                }
+            />
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

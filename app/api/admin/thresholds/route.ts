@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { extractBearerToken, verifyAdminSession, createAuditLog } from '@/lib/adminAuth';
+import { requireModuleEnabled } from '@/lib/moduleGuard';
 
 // GET - List all thresholds
 export async function GET(request: NextRequest) {
@@ -13,6 +14,8 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       );
     }
+    const disabled = await requireModuleEnabled('admin_panel');
+    if (disabled) return disabled;
 
     const searchParams = request.nextUrl.searchParams;
     const category = searchParams.get('category');
@@ -61,6 +64,8 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+    const disabled = await requireModuleEnabled('admin_panel');
+    if (disabled) return disabled;
 
     const body = await request.json();
     const { name, category, value, minValue, maxValue, description } = body;
@@ -118,6 +123,8 @@ export async function PATCH(request: NextRequest) {
         { status: 401 }
       );
     }
+    const disabled = await requireModuleEnabled('admin_panel');
+    if (disabled) return disabled;
 
     const body = await request.json();
     const { id, value, minValue, maxValue, description, isActive } = body;
@@ -193,6 +200,8 @@ export async function DELETE(request: NextRequest) {
         { status: 401 }
       );
     }
+    const disabled = await requireModuleEnabled('admin_panel');
+    if (disabled) return disabled;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

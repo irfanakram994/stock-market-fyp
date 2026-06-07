@@ -1,7 +1,10 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import { Loader, Settings } from 'lucide-react';
 import { superAdminFetch } from '@/lib/superAdminApi';
+import { useSnackbar } from '@/components/SnackbarProvider';
+import { AdminPageHeader, EmptyState, LoadingState, Panel, StatusPill } from '@/components/Admin/AdminUI';
 
 interface GlobalConfigRow {
   id: string;
@@ -14,71 +17,164 @@ interface GlobalConfigRow {
 }
 
 export default function SuperAdminConfigPage() {
+  const { showSnackbar } = useSnackbar();
   const [rows, setRows] = useState<GlobalConfigRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
   const [configKey, setConfigKey] = useState('');
   const [configValue, setConfigValue] = useState('{}');
   const [description, setDescription] = useState('');
 
   const load = async () => {
-    const res = await superAdminFetch('/api/super-admin/config');
-    const data = await res.json();
-    if (data.success) setRows(data.data);
+    try {
+      const res = await superAdminFetch('/api/super-admin/config');
+      const data = await res.json();
+      if (data.success) {
+        setRows(data.data);
+      } else {
+        showSnackbar({ variant: 'error', message: data.error || 'Failed to load global config.' });
+      }
+    } catch (error) {
+      console.error('Error loading config:', error);
+      showSnackbar({ variant: 'error', message: 'Failed to load global config.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     load();
   }, []);
 
-  const createConfig = async (e: FormEvent) => {
-    e.preventDefault();
-    await superAdminFetch('/api/super-admin/config', {
-      method: 'POST',
-      body: JSON.stringify({ configKey, configValue: JSON.parse(configValue), description }),
-    });
-    setConfigKey('');
-    setConfigValue('{}');
-    setDescription('');
-    load();
+  const createConfig = async (event: FormEvent) => {
+    event.preventDefault();
+
+    let parsedValue: unknown;
+    try {
+      parsedValue = JSON.parse(configValue);
+    } catch {
+      showSnackbar({ variant: 'warning', message: 'Config value must be valid JSON.' });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await superAdminFetch('/api/super-admin/config', {
+        method: 'POST',
+        body: JSON.stringify({ configKey, configValue: parsedValue, description }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showSnackbar({ variant: 'success', message: 'Global config saved successfully.' });
+        setConfigKey('');
+        setConfigValue('{}');
+        setDescription('');
+        await load();
+      } else {
+        showSnackbar({ variant: 'error', message: data.error || 'Failed to save config.' });
+      }
+    } catch (error) {
+      console.error('Error saving config:', error);
+      showSnackbar({ variant: 'error', message: 'Failed to save config.' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggle = async (id: string, isActive: boolean) => {
-    await superAdminFetch('/api/super-admin/config', {
-      method: 'PATCH',
-      body: JSON.stringify({ id, isActive: !isActive }),
-    });
-    load();
+    setSavingId(id);
+    try {
+      const res = await superAdminFetch('/api/super-admin/config', {
+        method: 'PATCH',
+        body: JSON.stringify({ id, isActive: !isActive }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showSnackbar({ variant: 'success', message: `Config ${isActive ? 'disabled' : 'activated'} successfully.` });
+        await load();
+      } else {
+        showSnackbar({ variant: 'error', message: data.error || 'Failed to update config.' });
+      }
+    } catch (error) {
+      console.error('Error toggling config:', error);
+      showSnackbar({ variant: 'error', message: 'Failed to update config.' });
+    } finally {
+      setSavingId(null);
+    }
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-white">System-wide Configuration</h1>
-        <p className="text-gray-400">Global configuration control managed by Super Admin only</p>
-      </div>
+      <AdminPageHeader
+        icon={Settings}
+        title="System-wide Configuration"
+        description="Global feature and behavior values managed by Super Admin only."
+      />
 
-      <form onSubmit={createConfig} className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <input value={configKey} onChange={(e) => setConfigKey(e.target.value)} placeholder="config key" className="px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white" required />
-          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="description" className="px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white" />
-          <button className="px-4 py-2 rounded bg-fuchsia-600 text-white hover:bg-fuchsia-700">Save Config</button>
-        </div>
-        <textarea value={configValue} onChange={(e) => setConfigValue(e.target.value)} rows={3} className="w-full px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white" placeholder='{"key":"value"}' />
-      </form>
-
-      <div className="space-y-2">
-        {rows.map((row) => (
-          <div key={row.id} className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-white font-medium">{row.configKey}</p>
-              <p className="text-gray-400 text-sm">{row.description || 'No description'}</p>
-              <p className="text-xs text-gray-500 mt-1">Updated by {row.updatedBy || 'N/A'} • {new Date(row.updatedAt).toLocaleString()}</p>
-            </div>
-            <button onClick={() => toggle(row.id, row.isActive)} className={`px-3 py-1 rounded text-xs ${row.isActive ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-              {row.isActive ? 'Active' : 'Disabled'}
+      <Panel className="p-5">
+        <form onSubmit={createConfig} className="space-y-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <input
+              value={configKey}
+              onChange={(event) => setConfigKey(event.target.value)}
+              placeholder="config key"
+              className="h-11 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-cyan-400/60"
+              required
+            />
+            <input
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="description"
+              className="h-11 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-cyan-400/60"
+            />
+            <button
+              disabled={saving}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-cyan-600 px-4 font-semibold text-white transition-colors hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving && <Loader className="h-4 w-4 animate-spin" />}
+              Save Config
             </button>
           </div>
-        ))}
-      </div>
+          <textarea
+            value={configValue}
+            onChange={(event) => setConfigValue(event.target.value)}
+            rows={4}
+            className="w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 font-mono text-sm text-white outline-none focus:border-cyan-400/60"
+            placeholder='{"key":"value"}'
+          />
+        </form>
+      </Panel>
+
+      {loading ? (
+        <LoadingState label="Loading global config..." />
+      ) : rows.length === 0 ? (
+        <EmptyState title="No config values yet" description="Create a config entry above." />
+      ) : (
+        <div className="space-y-3">
+          {rows.map((row) => (
+            <Panel key={row.id} className="flex items-start justify-between gap-4 p-4">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-white">{row.configKey}</p>
+                <p className="text-sm text-slate-400">{row.description || 'No description'}</p>
+                <pre className="mt-2 max-h-36 overflow-auto rounded bg-slate-950/70 p-2 text-xs text-slate-300">
+                  {JSON.stringify(row.configValue, null, 2)}
+                </pre>
+                <p className="mt-2 text-xs text-slate-500">
+                  Updated by {row.updatedBy || 'N/A'} - {new Date(row.updatedAt).toLocaleString()}
+                </p>
+              </div>
+              <button onClick={() => toggle(row.id, row.isActive)} disabled={savingId === row.id} className="disabled:opacity-60">
+                {savingId === row.id ? (
+                  <Loader className="h-4 w-4 animate-spin text-cyan-300" />
+                ) : (
+                  <StatusPill active={row.isActive} activeText="Active" inactiveText="Disabled" />
+                )}
+              </button>
+            </Panel>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

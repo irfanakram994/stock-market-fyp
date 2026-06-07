@@ -33,8 +33,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'configKey and configValue are required' }, { status: 400 });
     }
 
-    const created = await prisma.globalConfig.create({
-      data: {
+    const created = await prisma.globalConfig.upsert({
+      where: { configKey },
+      update: {
+        configValue,
+        description,
+        isActive,
+        updatedBy: session.superAdmin.email,
+      },
+      create: {
         configKey,
         configValue,
         description,

@@ -1,8 +1,10 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Loader, Plus, ShieldCheck, Trash2 } from 'lucide-react';
 import { superAdminFetch } from '@/lib/superAdminApi';
+import { useSnackbar } from '@/components/SnackbarProvider';
+import { AdminPageHeader, EmptyState, LoadingState, Panel, StatusPill } from '@/components/Admin/AdminUI';
 
 interface AdminRow {
   id: string;
@@ -15,15 +17,30 @@ interface AdminRow {
 }
 
 export default function SuperAdminAdminsPage() {
+  const { showSnackbar } = useSnackbar();
   const [admins, setAdmins] = useState<AdminRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
 
   const load = async () => {
-    const res = await superAdminFetch('/api/super-admin/admins');
-    const data = await res.json();
-    if (data.success) setAdmins(data.data);
+    try {
+      const res = await superAdminFetch('/api/super-admin/admins');
+      const data = await res.json();
+      if (data.success) {
+        setAdmins(data.data);
+      } else {
+        showSnackbar({ variant: 'error', message: data.error || 'Failed to load admin accounts.' });
+      }
+    } catch (error) {
+      console.error('Error loading admins:', error);
+      showSnackbar({ variant: 'error', message: 'Failed to load admin accounts.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -32,47 +49,105 @@ export default function SuperAdminAdminsPage() {
 
   const createAdmin = async (e: FormEvent) => {
     e.preventDefault();
-    const res = await superAdminFetch('/api/super-admin/admins', {
-      method: 'POST',
-      body: JSON.stringify({ email, name, password: password || undefined }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      setEmail('');
-      setName('');
-      setPassword('');
-      load();
+    if (password.trim().length < 8) {
+      showSnackbar({ variant: 'warning', message: 'Password is mandatory and must be at least 8 characters.' });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await superAdminFetch('/api/super-admin/admins', {
+        method: 'POST',
+        body: JSON.stringify({ email, name, password }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showSnackbar({ variant: 'success', message: 'Admin account created successfully.' });
+        setEmail('');
+        setName('');
+        setPassword('');
+        await load();
+      } else {
+        showSnackbar({ variant: 'error', message: data.error || 'Failed to create admin account.' });
+      }
+    } catch (error) {
+      console.error('Error creating admin:', error);
+      showSnackbar({ variant: 'error', message: 'Failed to create admin account.' });
+    } finally {
+      setSaving(false);
     }
   };
 
   const toggleAdmin = async (id: string, isActive: boolean) => {
-    await superAdminFetch('/api/super-admin/admins', {
-      method: 'PATCH',
-      body: JSON.stringify({ id, isActive: !isActive }),
-    });
-    load();
+    setSavingId(id);
+    try {
+      const res = await superAdminFetch('/api/super-admin/admins', {
+        method: 'PATCH',
+        body: JSON.stringify({ id, isActive: !isActive }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showSnackbar({ variant: 'success', message: `Admin ${isActive ? 'deactivated' : 'activated'} successfully.` });
+        await load();
+      } else {
+        showSnackbar({ variant: 'error', message: data.error || 'Failed to update admin account.' });
+      }
+    } catch (error) {
+      console.error('Error toggling admin:', error);
+      showSnackbar({ variant: 'error', message: 'Failed to update admin account.' });
+    } finally {
+      setSavingId(null);
+    }
   };
 
   const removeAdmin = async (id: string) => {
-    await superAdminFetch(`/api/super-admin/admins?id=${id}`, { method: 'DELETE' });
-    load();
+    const admin = admins.find((item) => item.id === id);
+    if (!window.confirm(`Delete ${admin?.email || 'this admin'}? This removes admin panel access.`)) return;
+
+    setSavingId(id);
+    try {
+      const res = await superAdminFetch(`/api/super-admin/admins?id=${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        showSnackbar({ variant: 'success', message: 'Admin account deleted successfully.' });
+        await load();
+      } else {
+        showSnackbar({ variant: 'error', message: data.error || 'Failed to delete admin account.' });
+      }
+    } catch (error) {
+      console.error('Error deleting admin:', error);
+      showSnackbar({ variant: 'error', message: 'Failed to delete admin account.' });
+    } finally {
+      setSavingId(null);
+    }
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Admin Account Management</h1>
-        <p className="text-gray-400">Create, update, and remove admin accounts</p>
-      </div>
+      <AdminPageHeader
+        icon={ShieldCheck}
+        title="Admin Account Management"
+        description="Create, activate, deactivate, and remove admin accounts with full audit visibility."
+      />
 
-      <form onSubmit={createAdmin} className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 grid grid-cols-1 md:grid-cols-4 gap-3">
-        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin email" className="px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white" required />
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="name" className="px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white" />
-        <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password (optional)" className="px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white" />
-        <button className="px-4 py-2 rounded bg-fuchsia-600 text-white hover:bg-fuchsia-700 flex items-center justify-center gap-2"><Plus className="w-4 h-4" /> Add Admin</button>
-      </form>
+      <Panel className="p-5">
+        <form onSubmit={createAdmin} className="grid grid-cols-1 gap-3 md:grid-cols-4">
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin email" type="email" className="h-11 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-cyan-400/60" required />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="name" className="h-11 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-cyan-400/60" />
+          <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password required" type="password" minLength={8} className="h-11 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-cyan-400/60" required />
+          <button disabled={saving} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-cyan-600 px-4 font-semibold text-white transition-colors hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60">
+            {saving ? <Loader className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            Add Admin
+          </button>
+        </form>
+      </Panel>
 
-      <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
+      <Panel className="overflow-hidden">
+        {loading ? (
+          <LoadingState label="Loading admin accounts..." />
+        ) : admins.length === 0 ? (
+          <EmptyState title="No admin accounts found" description="Create an admin account using the form above." />
+        ) : (
         <table className="w-full text-sm">
           <thead className="bg-slate-900/70 text-gray-300">
             <tr>
@@ -91,19 +166,22 @@ export default function SuperAdminAdminsPage() {
                 <td className="px-4 py-3">{admin.name || '-'}</td>
                 <td className="px-4 py-3 uppercase">{admin.role}</td>
                 <td className="px-4 py-3">
-                  <button onClick={() => toggleAdmin(admin.id, admin.isActive)} className={`px-2 py-1 rounded text-xs ${admin.isActive ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-                    {admin.isActive ? 'Active' : 'Inactive'}
+                  <button onClick={() => toggleAdmin(admin.id, admin.isActive)} disabled={savingId === admin.id} className="disabled:cursor-not-allowed disabled:opacity-60">
+                    {savingId === admin.id ? <Loader className="w-4 h-4 animate-spin text-cyan-300" /> : <StatusPill active={admin.isActive} />}
                   </button>
                 </td>
                 <td className="px-4 py-3 text-gray-400">{admin.lastLogin ? new Date(admin.lastLogin).toLocaleString() : '-'}</td>
                 <td className="px-4 py-3">
-                  <button onClick={() => removeAdmin(admin.id)} className="text-red-300 hover:text-red-200"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => removeAdmin(admin.id)} disabled={savingId === admin.id} className="rounded-lg p-2 text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-60" title="Delete admin">
+                    {savingId === admin.id ? <Loader className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
+        )}
+      </Panel>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { extractBearerToken, verifyAdminSession, createAuditLog } from '@/lib/adminAuth';
+import { requireModuleEnabled } from '@/lib/moduleGuard';
 
 // GET - List notifications for admin
 export async function GET(request: NextRequest) {
@@ -13,6 +14,8 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       );
     }
+    const disabled = await requireModuleEnabled('admin_panel');
+    if (disabled) return disabled;
 
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
@@ -82,6 +85,8 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+    const disabled = await requireModuleEnabled('admin_panel');
+    if (disabled) return disabled;
 
     const body = await request.json();
     const { type, title, message, category, priority, adminId, metadata } = body;
@@ -129,6 +134,8 @@ export async function PATCH(request: NextRequest) {
         { status: 401 }
       );
     }
+    const disabled = await requireModuleEnabled('admin_panel');
+    if (disabled) return disabled;
 
     const body = await request.json();
     const { notificationIds, markAllRead } = body;
@@ -181,6 +188,8 @@ export async function DELETE(request: NextRequest) {
         { status: 401 }
       );
     }
+    const disabled = await requireModuleEnabled('admin_panel');
+    if (disabled) return disabled;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

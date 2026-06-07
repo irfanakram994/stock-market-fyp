@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import {
   Users,
-  Search,
   ChevronLeft,
   ChevronRight,
   Loader,
@@ -13,8 +12,11 @@ import {
   Activity,
   Eye,
   UserX,
+  UserCheck,
 } from 'lucide-react';
 import { superAdminFetch } from '@/lib/superAdminApi';
+import { useSnackbar } from '@/components/SnackbarProvider';
+import { AdminPageHeader, EmptyState, LoadingState, Panel, SearchInput, StatusPill } from '@/components/Admin/AdminUI';
 
 interface User {
   id: string;
@@ -22,6 +24,8 @@ interface User {
   name: string | null;
   createdAt: string;
   updatedAt: string;
+  isBlocked: boolean;
+  blockedReason: string | null;
   _count: {
     stocks: number;
     agentLogs: number;
@@ -36,8 +40,10 @@ interface Pagination {
 }
 
 export default function SuperAdminUsersPage() {
+  const { showSnackbar } = useSnackbar();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savingUserId, setSavingUserId] = useState<string | null>(null);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
     limit: 20,
@@ -65,9 +71,12 @@ export default function SuperAdminUsersPage() {
       if (data.success) {
         setUsers(data.data);
         setPagination(data.pagination);
+      } else {
+        showSnackbar({ variant: 'error', message: data.error || 'Failed to load platform users.' });
       }
     } catch (error) {
       console.error('Error fetching users:', error);
+      showSnackbar({ variant: 'error', message: 'Failed to load platform users.' });
     } finally {
       setLoading(false);
     }
@@ -86,31 +95,61 @@ export default function SuperAdminUsersPage() {
     fetchUsers(newPage, search);
   };
 
+  const handleUserAction = async (user: User) => {
+    const action = user.isBlocked ? 'unblock' : 'block';
+    const previousUsers = users;
+    setSavingUserId(user.id);
+    setUsers((current) =>
+      current.map((item) =>
+        item.id === user.id
+          ? {
+              ...item,
+              isBlocked: !user.isBlocked,
+              blockedReason: user.isBlocked ? null : 'Account blocked by Super Admin.',
+            }
+          : item
+      )
+    );
+
+    try {
+      const res = await superAdminFetch('/api/super-admin/users', {
+        method: 'PATCH',
+        body: JSON.stringify({ userId: user.id, action }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showSnackbar({ variant: 'success', message: data.message || `User ${action}ed successfully.` });
+        await fetchUsers(pagination.page, search);
+      } else {
+        setUsers(previousUsers);
+        showSnackbar({ variant: 'error', message: data.error || `Failed to ${action} user.` });
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      setUsers(previousUsers);
+      showSnackbar({ variant: 'error', message: `Failed to ${action} user.` });
+    } finally {
+      setSavingUserId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Platform Users</h1>
-          <p className="text-gray-400">View registered users separate from admin accounts</p>
-        </div>
+      <AdminPageHeader
+        icon={Users}
+        title="Platform Users"
+        description="View and control registered user accounts separately from admin accounts."
+        actions={
         <div className="flex items-center space-x-2 bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-2">
           <Users className="w-5 h-5 text-orange-400" />
           <span className="text-white font-semibold">{pagination.total}</span>
           <span className="text-gray-400">total users</span>
         </div>
-      </div>
+        }
+      />
 
       <form onSubmit={handleSearch} className="flex items-center space-x-4">
-        <div className="relative flex-1 max-w-lg">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by email or name..."
-            className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
-          />
-        </div>
+        <SearchInput value={search} onChange={setSearch} placeholder="Search by email or name..." />
         <button
           type="submit"
           className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-red-600 transition-all"
@@ -119,16 +158,11 @@ export default function SuperAdminUsersPage() {
         </button>
       </form>
 
-      <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
+      <Panel className="overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader className="w-8 h-8 animate-spin text-orange-500" />
-          </div>
+          <LoadingState label="Loading users..." />
         ) : users.length === 0 ? (
-          <div className="text-center py-12">
-            <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400">No users found</p>
-          </div>
+          <EmptyState title="No users found" description="Try a different search term." />
         ) : (
           <table className="w-full">
             <thead>
@@ -137,6 +171,7 @@ export default function SuperAdminUsersPage() {
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-400">Joined</th>
                 <th className="px-6 py-4 text-center text-sm font-semibold text-gray-400">Stocks</th>
                 <th className="px-6 py-4 text-center text-sm font-semibold text-gray-400">Agent Tasks</th>
+                <th className="px-6 py-4 text-center text-sm font-semibold text-gray-400">Status</th>
                 <th className="px-6 py-4 text-right text-sm font-semibold text-gray-400">Actions</th>
               </tr>
             </thead>
@@ -177,6 +212,9 @@ export default function SuperAdminUsersPage() {
                       <span className="text-white font-medium">{user._count.agentLogs}</span>
                     </div>
                   </td>
+                  <td className="px-6 py-4 text-center">
+                    <StatusPill active={!user.isBlocked} activeText="Active" inactiveText="Blocked" />
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end space-x-2">
                       <button
@@ -187,10 +225,12 @@ export default function SuperAdminUsersPage() {
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
-                        className="p-2 rounded-lg hover:bg-slate-600/50 text-gray-400 hover:text-red-400 transition-colors"
-                        title="View Details"
+                        onClick={() => handleUserAction(user)}
+                        disabled={savingUserId === user.id}
+                        className={`p-2 rounded-lg text-gray-400 transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${user.isBlocked ? 'hover:bg-green-500/20 hover:text-green-400' : 'hover:bg-red-500/20 hover:text-red-400'}`}
+                        title={user.isBlocked ? 'Unblock User' : 'Block User'}
                       >
-                        <UserX className="w-4 h-4" />
+                        {savingUserId === user.id ? <Loader className="w-4 h-4 animate-spin" /> : user.isBlocked ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
                       </button>
                     </div>
                   </td>
@@ -224,7 +264,7 @@ export default function SuperAdminUsersPage() {
             </div>
           </div>
         )}
-      </div>
+      </Panel>
 
       {selectedUser && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
@@ -264,9 +304,28 @@ export default function SuperAdminUsersPage() {
                   <p className="text-gray-400 text-sm">Agent Tasks</p>
                   <p className="text-white font-semibold">{selectedUser._count.agentLogs}</p>
                 </div>
+                <div className="bg-slate-900/50 rounded-lg p-4">
+                  <p className="text-gray-400 text-sm">Status</p>
+                  <div className="mt-1">
+                    <StatusPill active={!selectedUser.isBlocked} activeText="Active" inactiveText="Blocked" />
+                  </div>
+                </div>
+                <div className="bg-slate-900/50 rounded-lg p-4">
+                  <p className="text-gray-400 text-sm">Block Reason</p>
+                  <p className="text-white font-semibold">{selectedUser.blockedReason || '-'}</p>
+                </div>
               </div>
 
               <div className="flex space-x-3 pt-4">
+                <button
+                  onClick={() => {
+                    handleUserAction(selectedUser);
+                    setSelectedUser(null);
+                  }}
+                  className={`flex-1 py-2 rounded-lg transition-colors ${selectedUser.isBlocked ? 'bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30' : 'bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30'}`}
+                >
+                  {selectedUser.isBlocked ? 'Unblock User' : 'Block User'}
+                </button>
                 <button
                   onClick={() => setSelectedUser(null)}
                   className="flex-1 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
