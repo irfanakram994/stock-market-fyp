@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAdminAuth } from '@/lib/adminAuthContext';
 import { adminFetch } from '@/lib/adminApi';
+import { useSnackbar } from '@/components/SnackbarProvider';
 
 interface User {
     id: string;
@@ -25,7 +26,7 @@ interface User {
     createdAt: string;
     updatedAt: string;
     _count: {
-        stocks: number;
+        predictions: number;
         agentLogs: number;
     };
 }
@@ -39,6 +40,7 @@ interface Pagination {
 
 export default function UsersPage() {
     const { admin } = useAdminAuth();
+    const { showSnackbar } = useSnackbar();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState<Pagination>({
@@ -96,11 +98,14 @@ export default function UsersPage() {
             });
             const data = await res.json();
             if (data.success) {
-                // Show success message
-                alert(`User ${action}d successfully`);
+                showSnackbar({ variant: 'success', message: `User ${action}d successfully.` });
+                fetchUsers(pagination.page, search);
+            } else {
+                showSnackbar({ variant: 'error', message: data.error || `Failed to ${action} user.` });
             }
         } catch (error) {
             console.error('Error updating user:', error);
+            showSnackbar({ variant: 'error', message: `Failed to ${action} user.` });
         }
     };
 
@@ -161,7 +166,7 @@ export default function UsersPage() {
                                     Joined
                                 </th>
                                 <th className="px-6 py-4 text-center text-sm font-semibold text-gray-400">
-                                    Stocks
+                                    Predictions
                                 </th>
                                 <th className="px-6 py-4 text-center text-sm font-semibold text-gray-400">
                                     Agent Tasks
@@ -208,7 +213,7 @@ export default function UsersPage() {
                                         <div className="flex items-center justify-center space-x-1">
                                             <BarChart3 className="w-4 h-4 text-green-400" />
                                             <span className="text-white font-medium">
-                                                {user._count.stocks}
+                                                {user._count.predictions}
                                             </span>
                                         </div>
                                     </td>
@@ -321,9 +326,9 @@ export default function UsersPage() {
                                     </p>
                                 </div>
                                 <div className="bg-slate-900/50 rounded-lg p-4">
-                                    <p className="text-gray-400 text-sm">Stocks Tracked</p>
+                                    <p className="text-gray-400 text-sm">Predictions</p>
                                     <p className="text-white font-semibold">
-                                        {selectedUser._count.stocks}
+                                        {selectedUser._count.predictions}
                                     </p>
                                 </div>
                                 <div className="bg-slate-900/50 rounded-lg p-4">

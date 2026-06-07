@@ -1,18 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runPredictionAgent } from "@/lib/agentRunner";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/userAuth";
+
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/predictions - Fetch all predictions from database
  */
 export async function GET(request: NextRequest) {
   try {
+    const user = await requireUser(request);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const symbol = searchParams.get("symbol");
     const limit = parseInt(searchParams.get("limit") || "30");
 
     // Build where clause
-    const where: any = {};
+    const where: any = { userId: user.id };
     if (symbol) {
       where.stock = { symbol: symbol.toUpperCase() };
     }
@@ -53,9 +64,20 @@ export async function GET(request: NextRequest) {
  * Uses Prophet, OpenAI/Groq LLM, News APIs - Stores results in Supabase via Prisma
  */
 export async function POST(request: NextRequest) {
+  let logId: string | null = null;
+  const startedAt = Date.now();
+
   try {
+    const user = await requireUser(request);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
     const body = await request.json();
-    const { symbol, forecastDays = 30, userId } = body;
+    const { symbol, forecastDays = 30 } = body;
 
     if (!symbol) {
       return NextResponse.json(
@@ -66,10 +88,30 @@ export async function POST(request: NextRequest) {
 
     const symbolUpper = symbol.toString().toUpperCase();
 
+    const runningLog = await prisma.agentLog.create({
+      data: {
+        userId: user.id,
+        agentName: "PredictionAgent",
+        status: "running",
+        input: { symbol: symbolUpper, forecastDays },
+      },
+    });
+    logId = runningLog.id;
+
     // 1. Run Python agent to get predictions
     const result = await runPredictionAgent(symbolUpper, forecastDays);
 
     if (!result.success) {
+      await prisma.agentLog.update({
+        where: { id: runningLog.id },
+        data: {
+          status: "failed",
+          error: result.error || "Prediction failed",
+          duration: Date.now() - startedAt,
+          completedAt: new Date(),
+        },
+      });
+
       return NextResponse.json(
         {
           success: false,
@@ -120,6 +162,7 @@ export async function POST(request: NextRequest) {
       await prisma.prediction.create({
         data: {
           stockId: stock.id,
+          userId: user.id,
           predictionDate: new Date(result.predictions[0].date), // First prediction date
           predictedPrice: avgPredictedPrice,
           lowerBound: avgLowerBound,
@@ -133,10 +176,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Log the agent execution
-    if (userId) {
-      await prisma.agentLog.create({
-        data: {
-          userId,
+    await prisma.agentLog.update({
+      where: { id: runningLog.id },
+      data: {
           agentName: "PredictionAgent",
           status: "completed",
           input: { symbol: symbolUpper, forecastDays },
@@ -153,9 +195,10 @@ export async function POST(request: NextRequest) {
                 ) / result.predictions.length
               : null,
           },
-        },
-      });
-    }
+          duration: Date.now() - startedAt,
+          completedAt: new Date(),
+      },
+    });
 
     return NextResponse.json({
       success: true,
@@ -176,6 +219,21 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("Error running prediction:", error);
+    if (logId) {
+      try {
+        await prisma.agentLog.update({
+          where: { id: logId },
+          data: {
+            status: "failed",
+            error: message,
+            duration: Date.now() - startedAt,
+            completedAt: new Date(),
+          },
+        });
+      } catch (logError) {
+        console.error("Error updating failed prediction log:", logError);
+      }
+    }
     return NextResponse.json(
       {
         success: false,

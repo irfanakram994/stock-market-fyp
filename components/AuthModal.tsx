@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { X, Mail, Lock, User, Facebook, Linkedin, Loader, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { resolveCurrentRole } from '@/lib/roleRouting';
+import { useSnackbar } from '@/components/SnackbarProvider';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -14,6 +15,7 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     const router = useRouter();
+    const { showSnackbar } = useSnackbar();
     const [isSignIn, setIsSignIn] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -52,64 +54,49 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     const msg = signInError.message.toLowerCase();
                     if (msg.includes('invalid login credentials')) {
                         setError('Invalid email or password.');
+                        showSnackbar({ variant: 'error', message: 'Invalid email or password.' });
                     } else if (msg.includes('email not confirmed')) {
                         setError('Please confirm your email before signing in.');
+                        showSnackbar({ variant: 'warning', message: 'Please confirm your email before signing in.' });
                     } else {
                         setError(signInError.message);
+                        showSnackbar({ variant: 'error', message: signInError.message });
                     }
                     return;
                 }
 
                 if (!data.user) {
                     setError('Failed to sign in');
+                    showSnackbar({ variant: 'error', message: 'Failed to sign in.' });
                     return;
                 }
 
                 const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
                 if (sessionError || !sessionData.session) {
                     setError('Login succeeded but session could not be established. Please try again.');
+                    showSnackbar({
+                        variant: 'warning',
+                        message: 'Login succeeded but the session could not be established. Please try again.',
+                    });
                     return;
                 }
 
                 setAuthCookie();
+                showSnackbar({ variant: 'success', message: 'Signed in successfully.' });
             } else {
-                // Sign up using client-side Supabase auth
                 if (formData.password !== formData.confirmPassword) {
                     setError('Passwords do not match');
+                    showSnackbar({ variant: 'warning', message: 'Passwords do not match.' });
                     return;
                 }
 
                 if (formData.password.length < 6) {
                     setError('Password must be at least 6 characters');
+                    showSnackbar({ variant: 'warning', message: 'Password must be at least 6 characters.' });
                     return;
                 }
 
-                const { data, error: signUpError } = await supabase.auth.signUp({
-                    email: formData.email,
-                    password: formData.password,
-                    options: {
-                        data: {
-                            name: formData.name,
-                        },
-                    },
-                });
-
-                if (signUpError) {
-                    setError(signUpError.message);
-                    return;
-                }
-
-                if (!data.user) {
-                    setError('Failed to sign up');
-                    return;
-                }
-
-                if (data.session) {
-                    setAuthCookie();
-                }
-
-                // Also create user in our database
-                await fetch('/api/auth/signup', {
+                const response = await fetch('/api/auth/signup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -119,6 +106,23 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                         confirmPassword: formData.confirmPassword,
                     }),
                 });
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    const message = result.error || 'Failed to create account.';
+                    setError(message);
+                    showSnackbar({ variant: 'error', message });
+                    return;
+                }
+
+                showSnackbar({
+                    variant: 'success',
+                    message: 'Account created successfully. Please confirm your email before signing in.',
+                    duration: 7000,
+                });
+                setFormData({ email: formData.email, password: '', name: '', confirmPassword: '' });
+                setIsSignIn(true);
+                return;
             }
 
             // Reset form
@@ -132,7 +136,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 router.push('/dashboard');
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
+            const message = err instanceof Error ? err.message : 'An error occurred';
+            setError(message);
+            showSnackbar({ variant: 'error', message });
         } finally {
             setLoading(false);
         }
@@ -162,12 +168,24 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             const result = await res.json();
             if (!res.ok || !result.success) {
                 setError(result.error || 'Failed to process forgot password request.');
+                showSnackbar({
+                    variant: 'error',
+                    message: result.error || 'Failed to process forgot password request.',
+                });
                 return;
             }
 
             setForgotMessage(result.message || 'Password reset email sent.');
+            showSnackbar({
+                variant: 'success',
+                message: result.message || 'Password reset email sent.',
+            });
         } catch {
             setError('Failed to process forgot password request. Please try again.');
+            showSnackbar({
+                variant: 'error',
+                message: 'Failed to process forgot password request. Please try again.',
+            });
         } finally {
             setForgotLoading(false);
         }

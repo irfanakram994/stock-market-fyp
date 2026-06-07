@@ -51,7 +51,7 @@ export interface Stock {
 }
 
 export function fetchStocks() {
-    return fetchApi<Stock[]>('/api/stocks');
+    return fetchApi<Stock[]>('/api/stocks', undefined, { includeAuth: true });
 }
 
 export interface StockPurchase {
@@ -130,38 +130,46 @@ export interface Prediction {
     stock?: { symbol: string; name: string };
 }
 
+export interface RecentPrediction extends Prediction {
+    symbol: string;
+    name: string;
+    sector?: string | null;
+}
+
 export function fetchPredictions(symbol?: string, limit?: number) {
     const params = new URLSearchParams();
     if (symbol) params.set('symbol', symbol);
     if (limit) params.set('limit', String(limit));
-    return fetchApi<Prediction[]>(`/api/predictions?${params}`);
+    return fetchApi<Prediction[]>(`/api/predictions?${params}`, undefined, { includeAuth: true });
 }
 
-export interface RunPredictionResponse {
-    success: boolean;
-    message?: string;
-    data?: {
-        symbol: string;
-        currentPrice?: number;
-        predictions?: Array<{
-            date: string;
-            predictedPrice: number;
-            lowerBound: number;
-            upperBound: number;
-            confidence: number;
-        }>;
-        trend?: string;
-        insight?: string;
-        sentimentScore?: number;
-    };
-    error?: string;
-    details?: string;
+export function fetchRecentPredictions(limit?: number) {
+    const params = new URLSearchParams();
+    if (limit) params.set('limit', String(limit));
+    return fetchApi<RecentPrediction[]>(`/api/predictions/recent?${params}`, undefined, { includeAuth: true });
+}
+
+export interface RunPredictionData {
+    symbol: string;
+    currentPrice?: number;
+    predictions?: Array<{
+        date: string;
+        predictedPrice: number;
+        lowerBound: number;
+        upperBound: number;
+        confidence: number;
+    }>;
+    trend?: string;
+    insight?: string;
+    sentimentScore?: number;
+    avgPredictedPrice?: number | null;
 }
 
 export function runPrediction(symbol: string, forecastDays = 30) {
-    return fetchApi<RunPredictionResponse>(
+    return fetchApi<RunPredictionData>(
         '/api/predictions',
-        { method: 'POST', body: JSON.stringify({ symbol, forecastDays }) }
+        { method: 'POST', body: JSON.stringify({ symbol, forecastDays }) },
+        { includeAuth: true }
     );
 }
 
@@ -187,7 +195,7 @@ export function fetchNews(symbol?: string, limit?: number) {
     const params = new URLSearchParams();
     if (symbol) params.set('symbol', symbol);
     if (limit) params.set('limit', String(limit));
-    return fetchApi<NewsItem[]>(`/api/news?${params}`);
+    return fetchApi<NewsItem[]>(`/api/news?${params}`, undefined, { includeAuth: true });
 }
 
 /** Fetch live news from News API via Python agent (no DB) */
@@ -224,7 +232,7 @@ export function fetchAgentLogs(status?: string, limit?: number) {
 }
 
 export function runAgent(agent: string, symbol: string, forecastDays = 30) {
-    return fetchApi<{ jobId: string; status: string; message: string }>(
+    return fetchApi<RunPredictionData | Record<string, unknown>>(
         '/api/agents/run',
         { method: 'POST', body: JSON.stringify({ agent, symbol, forecastDays }) },
         { includeAuth: true }
@@ -261,12 +269,12 @@ export interface BacktestResult {
 export function fetchBacktests(symbol?: string) {
     const params = new URLSearchParams();
     if (symbol) params.set('symbol', symbol);
-    return fetchApi<BacktestResult[]>(`/api/backtesting?${params}`);
+    return fetchApi<BacktestResult[]>(`/api/backtesting?${params}`, undefined, { includeAuth: true });
 }
 
 export function runBacktest(symbol: string, startDate: string, endDate: string, initialCapital: number) {
     return fetchApi<BacktestResult>('/api/backtesting', {
         method: 'POST',
         body: JSON.stringify({ symbol, startDate, endDate, initialCapital }),
-    });
+    }, { includeAuth: true });
 }

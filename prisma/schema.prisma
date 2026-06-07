@@ -16,12 +16,16 @@ model User {
   name      String?
   gender    String?
   profileImage String?
+  isBlocked Boolean  @default(false)
+  blockedReason String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
   stocks    Stock[]
   agentLogs AgentLog[]
+  predictions Prediction[]
+  backtests BacktestResult[]
 }
 
 // Stock symbols and metadata
@@ -88,6 +92,7 @@ model Sentiment {
 model Prediction {
   id              String   @id @default(cuid())
   stockId         String
+  userId          String?
   predictionDate  DateTime // Date being predicted
   predictedPrice  Float
   lowerBound      Float    // Lower confidence interval
@@ -100,7 +105,9 @@ model Prediction {
   
   // Relations
   stock           Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  user            User?    @relation(fields: [userId], references: [id])
   
+  @@index([userId])
   @@index([stockId])
   @@index([predictionDate])
   @@index([createdAt])
@@ -131,6 +138,7 @@ model AgentLog {
 model BacktestResult {
   id              String   @id @default(cuid())
   stockId         String
+  userId          String?
   strategyName    String
   startDate       DateTime
   endDate         DateTime
@@ -149,7 +157,9 @@ model BacktestResult {
   
   // Relations
   stock           Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  user            User?    @relation(fields: [userId], references: [id])
   
+  @@index([userId])
   @@index([stockId])
   @@index([createdAt])
 }

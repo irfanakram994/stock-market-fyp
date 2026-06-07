@@ -1,28 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 import { prisma } from '@/lib/prisma';
-import { supabaseServer } from '@/lib/supabaseClient';
-
-async function requireUser(request: NextRequest) {
-    const authorization = request.headers.get('authorization');
-    const [scheme, token] = authorization?.split(' ') ?? [];
-    if (scheme?.toLowerCase() !== 'bearer' || !token) {
-        return null;
-    }
-
-    const { data, error } = await supabaseServer.auth.getUser(token);
-    if (error || !data.user) {
-        return null;
-    }
-
-    return data.user;
-}
+import { requireUser } from '@/lib/userAuth';
 
 // GET /api/agents - List agent logs
 export async function GET(request: NextRequest) {
     try {
-        const isAuthorized = await requireUser(request);
-        if (!isAuthorized) {
+        const user = await requireUser(request);
+        if (!user) {
             return NextResponse.json(
                 { success: false, error: 'Unauthorized' },
                 { status: 401 }
@@ -33,7 +18,7 @@ export async function GET(request: NextRequest) {
         const status = searchParams.get('status');
         const limit = parseInt(searchParams.get('limit') || '50');
 
-        const where = status ? { status } : {};
+        const where = status ? { userId: user.id, status } : { userId: user.id };
 
         const agentLogs = await prisma.agentLog.findMany({
             where,

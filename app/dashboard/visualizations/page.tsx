@@ -3,11 +3,19 @@
 import { useEffect, useState } from 'react';
 import { Loader } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { fetchStocks, fetchPredictions, Stock, Prediction } from '@/lib/api';
+import { fetchStocks, fetchPredictions, fetchNews, Stock, Prediction } from '@/lib/api';
+import { useSnackbar } from '@/components/SnackbarProvider';
+
+interface SentimentPoint {
+    date: string;
+    sentiment: number;
+}
 
 export default function VisualizationsPage() {
+    const { showSnackbar } = useSnackbar();
     const [stocks, setStocks] = useState<Stock[]>([]);
     const [predictions, setPredictions] = useState<Record<string, Prediction[]>>({});
+    const [sentimentData, setSentimentData] = useState<SentimentPoint[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -31,6 +39,33 @@ export default function VisualizationsPage() {
                     })
                 );
                 setPredictions(predMap);
+
+                const newsRes = await fetchNews(undefined, 100);
+                if (newsRes.success && newsRes.data) {
+                    const grouped = newsRes.data.reduce<Record<string, { total: number; count: number }>>((acc, item) => {
+                        if (!item.sentiment) return acc;
+                        const date = new Date(item.publishedAt).toLocaleDateString('en-CA');
+                        if (!acc[date]) acc[date] = { total: 0, count: 0 };
+                        acc[date].total += item.sentiment.score;
+                        acc[date].count += 1;
+                        return acc;
+                    }, {});
+
+                    setSentimentData(
+                        Object.entries(grouped)
+                            .map(([date, value]) => ({
+                                date,
+                                sentiment: Number((value.total / value.count).toFixed(3)),
+                            }))
+                            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                    );
+                } else if (!newsRes.success) {
+                    showSnackbar({
+                        variant: 'warning',
+                        message: newsRes.error || 'Sentiment timeline data is unavailable right now.',
+                    });
+                    setSentimentData([]);
+                }
             } else {
                 setLoadError(stockRes.error || 'Failed to load tracked stocks.');
             }
@@ -139,9 +174,45 @@ export default function VisualizationsPage() {
             {/* Sentiment Timeline */}
             <div className="card">
                 <h2 className="text-xl font-bold mb-4">Sentiment Timeline</h2>
-                <div className="h-64 flex items-center justify-center text-gray-400">
-                    Sentiment timeline chart will be displayed here
-                </div>
+                {sentimentData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={260}>
+                        <LineChart data={sentimentData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                            <XAxis
+                                dataKey="date"
+                                stroke="#94a3b8"
+                                tick={{ fill: '#94a3b8' }}
+                            />
+                            <YAxis
+                                stroke="#94a3b8"
+                                tick={{ fill: '#94a3b8' }}
+                                domain={[-1, 1]}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: '#1e293b',
+                                    border: '1px solid #334155',
+                                    borderRadius: '8px',
+                                    color: '#f8fafc'
+                                }}
+                                formatter={(value: number) => [value.toFixed(2), 'Avg sentiment']}
+                            />
+                            <Line
+                                type="monotone"
+                                dataKey="sentiment"
+                                stroke="#22c55e"
+                                strokeWidth={3}
+                                dot={{ r: 3 }}
+                                name="Sentiment"
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                ) : (
+                    <div className="h-64 flex flex-col items-center justify-center text-gray-400 gap-2">
+                        <p>No sentiment history yet.</p>
+                        <p className="text-sm">Run predictions for stocks with stored news to build your timeline.</p>
+                    </div>
+                )}
             </div>
 
             {/* Performance Metrics */}

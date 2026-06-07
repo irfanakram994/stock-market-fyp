@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireUser } from '@/lib/userAuth';
+
+export const dynamic = 'force-dynamic';
 
 // GET /api/backtesting - List backtest results
 export async function GET(request: NextRequest) {
     try {
+        const user = await requireUser(request);
+        if (!user) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
         const { searchParams } = new URL(request.url);
         const symbol = searchParams.get('symbol');
         const limit = parseInt(searchParams.get('limit') || '20');
 
-        const where = symbol ? { stock: { symbol } } : {};
+        const where = symbol ? { userId: user.id, stock: { symbol } } : { userId: user.id };
 
         const results = await prisma.backtestResult.findMany({
             where,
@@ -45,6 +56,14 @@ export async function GET(request: NextRequest) {
 // POST /api/backtesting - Run a new backtest
 export async function POST(request: NextRequest) {
     try {
+        const user = await requireUser(request);
+        if (!user) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
         const body = await request.json();
         const { symbol, startDate, endDate, initialCapital = 100000 } = body;
 
@@ -74,6 +93,7 @@ export async function POST(request: NextRequest) {
         const result = await prisma.backtestResult.create({
             data: {
                 stockId: stock.id,
+                userId: user.id,
                 strategyName: 'AI-Prediction-Strategy',
                 startDate: new Date(startDate || '2025-01-01'),
                 endDate: new Date(endDate || '2025-12-31'),

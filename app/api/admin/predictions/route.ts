@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { extractBearerToken, verifyAdminSession } from '@/lib/adminAuth';
 
+export const dynamic = 'force-dynamic';
+
 // GET - List predictions with filters
 export async function GET(request: NextRequest) {
   try {
@@ -56,6 +58,13 @@ export async function GET(request: NextRequest) {
               symbol: true,
               name: true,
               sector: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
             },
           },
         },

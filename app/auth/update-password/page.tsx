@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AlertCircle, CheckCircle2, Loader2, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
@@ -22,7 +22,7 @@ function getRoleLabel(role: string): string {
   return 'User';
 }
 
-export default function UpdatePasswordPage() {
+function UpdatePasswordContent() {
   const searchParams = useSearchParams();
   const roleParam = searchParams.get('role') ?? 'user';
   const role = (roleParam === 'admin' || roleParam === 'super-admin' || roleParam === 'user')
@@ -229,5 +229,22 @@ export default function UpdatePasswordPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function UpdatePasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-950 flex items-center justify-center p-4">
+          <div className="flex items-center gap-3 text-cyan-200">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Loading password recovery...</span>
+          </div>
+        </div>
+      }
+    >
+      <UpdatePasswordContent />
+    </Suspense>
   );
 }

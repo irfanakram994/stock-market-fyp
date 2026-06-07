@@ -5,7 +5,8 @@ import { Search, TrendingUp, Loader } from 'lucide-react';
 import PriceChart from '@/components/Charts/PriceChart';
 import RSIChart from '@/components/Charts/RSIChart';
 import MACDChart from '@/components/Charts/MACDChart';
-import { fetchMarketData, fetchNews, fetchNewsLive, runPrediction, NewsItem } from '@/lib/api';
+import { fetchMarketData, fetchNews, fetchNewsLive, runAgent, NewsItem } from '@/lib/api';
+import { useSnackbar } from '@/components/SnackbarProvider';
 
 interface PredictionData {
     date: string;
@@ -16,6 +17,7 @@ interface PredictionData {
 }
 
 export default function StockAnalysisPage() {
+    const { showSnackbar } = useSnackbar();
     const [symbol, setSymbol] = useState('AAPL');
     const [searchSymbol, setSearchSymbol] = useState('AAPL');
     const [stockName, setStockName] = useState<string>('');
@@ -47,7 +49,7 @@ export default function StockAnalysisPage() {
             const [marketRes, newsRes, predRes] = await Promise.all([
                 fetchMarketData(symUpper),
                 fetchNewsLive(symUpper),
-                runPrediction(symUpper, 30),
+                runAgent('prediction', symUpper, 30),
             ]);
 
             if (marketRes.success && marketRes.data?.prices?.length) {
@@ -97,6 +99,10 @@ export default function StockAnalysisPage() {
                 setTrend('');
                 setSentiment(null);
                 setInsight('');
+                showSnackbar({
+                    variant: 'warning',
+                    message: predRes.error || `Prediction preview for ${symUpper} was unavailable.`,
+                });
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);

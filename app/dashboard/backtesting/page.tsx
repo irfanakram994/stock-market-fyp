@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { Play, Loader, TrendingUp, TrendingDown } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { fetchBacktests, runBacktest, BacktestResult } from '@/lib/api';
+import { useSnackbar } from '@/components/SnackbarProvider';
 
 export default function BacktestingPage() {
+    const { showSnackbar, updateSnackbar } = useSnackbar();
     const [running, setRunning] = useState(false);
     const [loading, setLoading] = useState(true);
     const [symbol, setSymbol] = useState('AAPL');
@@ -13,12 +15,15 @@ export default function BacktestingPage() {
     const [endDate, setEndDate] = useState('2025-12-31');
     const [initialCapital, setInitialCapital] = useState(100000);
     const [results, setResults] = useState<BacktestResult[]>([]);
-    const [message, setMessage] = useState('');
 
     const loadResults = async () => {
         setLoading(true);
         const res = await fetchBacktests();
-        if (res.success && res.data) setResults(res.data);
+        if (res.success && res.data) {
+            setResults(res.data);
+        } else if (!res.success) {
+            showSnackbar({ variant: 'error', message: res.error || 'Failed to load your backtests.' });
+        }
         setLoading(false);
     };
 
@@ -28,13 +33,16 @@ export default function BacktestingPage() {
 
     const handleRunBacktest = async () => {
         setRunning(true);
-        setMessage('');
+        const snackbarId = showSnackbar({
+            variant: 'loading',
+            message: `Running ${symbol} backtest...`,
+        });
         const res = await runBacktest(symbol, startDate, endDate, initialCapital);
         if (res.success) {
-            setMessage(res.message || 'Backtest created');
+            updateSnackbar(snackbarId, { variant: 'success', message: res.message || 'Backtest created.' });
             await loadResults(); // Refresh results
         } else {
-            setMessage(res.error || 'Failed to run backtest');
+            updateSnackbar(snackbarId, { variant: 'error', message: res.error || 'Failed to run backtest.' });
         }
         setRunning(false);
     };
@@ -105,7 +113,6 @@ export default function BacktestingPage() {
                         )}
                         {running ? 'Running...' : 'Run Backtest'}
                     </button>
-                    {message && <span className="text-sm text-primary">{message}</span>}
                 </div>
             </div>
 

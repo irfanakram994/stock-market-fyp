@@ -3,15 +3,25 @@
 import { useEffect, useState } from 'react';
 import { Activity, CheckCircle, XCircle, Clock, Loader, RefreshCw } from 'lucide-react';
 import { fetchAgentLogs, AgentLog } from '@/lib/api';
+import { useSnackbar } from '@/components/SnackbarProvider';
 
 export default function AgentLogsPage() {
+    const { showSnackbar } = useSnackbar();
     const [logs, setLogs] = useState<AgentLog[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     const loadLogs = async () => {
         setLoading(true);
+        setLoadError(null);
         const res = await fetchAgentLogs(undefined, 50);
-        if (res.success && res.data) setLogs(res.data);
+        if (res.success && res.data) {
+            setLogs(res.data);
+        } else {
+            const message = res.error || 'Failed to load your agent logs.';
+            setLoadError(message);
+            showSnackbar({ variant: 'error', message });
+        }
         setLoading(false);
     };
 
@@ -119,7 +129,13 @@ export default function AgentLogsPage() {
                         <Loader className="w-8 h-8 animate-spin text-primary" />
                     </div>
                 ) : logs.length === 0 ? (
-                    <p className="text-gray-400 text-center py-8">No agent logs found. Run an agent to see results.</p>
+                    <div className="text-center py-8">
+                        <p className="text-gray-300 font-medium">No agent logs yet.</p>
+                        <p className="text-gray-500 text-sm mt-2">
+                            Run a prediction or stock analysis preview to see your personal agent activity here.
+                        </p>
+                        {loadError && <p className="text-red-400 text-sm mt-3">{loadError}</p>}
+                    </div>
                 ) : (
                     <div className="space-y-3">
                         {logs.map((log) => (

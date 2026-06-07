@@ -10,7 +10,8 @@ import {
   FileJson,
 } from "lucide-react";
 import ForecastChart from "@/components/Charts/ForecastChart";
-import { runPrediction, Prediction } from "@/lib/api";
+import { fetchRecentPredictions, runPrediction, Prediction } from "@/lib/api";
+import { useSnackbar } from "@/components/SnackbarProvider";
 import {
   downloadPredictionsCSV,
   downloadPredictionsJSON,
@@ -24,15 +25,14 @@ interface StoredPrediction extends Prediction {
 }
 
 export default function AIPredictionsPage() {
+  const { showSnackbar, updateSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [progress, setProgress] = useState(0);
   const [symbol, setSymbol] = useState("AAPL");
   const [days, setDays] = useState(30);
   const [predictions, setPredictions] = useState<StoredPrediction[]>([]);
-  const [message, setMessage] = useState("");
-  const [messageIsError, setMessageIsError] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
-  const [user, setUser] = useState<{ id: string } | null>(null);
 
   const availableSymbols = [
     "AAPL","MSFT","NVDA","AMZN","GOOGL","META","TSLA","NFLX","AMD","INTC",
@@ -55,22 +55,6 @@ export default function AIPredictionsPage() {
     "SEARL","GLAXO","ABOT","AGP",
   ];
 
-  // Fetch current user on mount
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch("/api/auth/user");
-        if (res.ok) {
-          const userData = await res.json();
-          setUser(userData.data);
-        }
-      } catch (e) {
-        console.error("Failed to fetch user:", e);
-      }
-    };
-    fetchUser();
-  }, []);
-
   // Load recent predictions from database on mount
   useEffect(() => {
     loadRecentPredictions();
@@ -79,10 +63,9 @@ export default function AIPredictionsPage() {
   const loadRecentPredictions = async () => {
     setFetching(true);
     try {
-      const res = await fetch("/api/predictions/recent?limit=20");
-      const data = await res.json();
+      const data = await fetchRecentPredictions(20);
 
-      if (data.success && data.data.length > 0) {
+      if (data.success && data.data && data.data.length > 0) {
         // Map stored predictions to display format
         const mapped: StoredPrediction[] = data.data.map((p: any) => ({
           id: p.id,
@@ -109,18 +92,21 @@ export default function AIPredictionsPage() {
       } else {
         setPredictions([]);
         if (!data.success) {
-          setMessage(data.error || "Failed to load recent predictions");
-          setMessageIsError(true);
+          showSnackbar({
+            variant: "error",
+            message: data.error || "Failed to load your recent predictions.",
+          });
         }
       }
     } catch (error) {
       console.error("Failed to load predictions:", error);
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Failed to load recent predictions",
-      );
-      setMessageIsError(true);
+      showSnackbar({
+        variant: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to load your recent predictions.",
+      });
     } finally {
       setFetching(false);
     }
@@ -128,25 +114,40 @@ export default function AIPredictionsPage() {
 
   const handleRunPrediction = async () => {
     setLoading(true);
-    setMessage("");
-    setMessageIsError(false);
+    setProgress(12);
+
+    const snackbarId = showSnackbar({
+      variant: "loading",
+      message: `Running ${symbol} prediction. This can take a little while...`,
+    });
+
+    const interval = window.setInterval(() => {
+      setProgress((current) => Math.min(current + 7, 92));
+    }, 900);
 
     const res = await runPrediction(symbol, days);
+    window.clearInterval(interval);
+    setProgress(100);
 
-    if (res.success && (res.data as any)?.predictions) {
-      setMessage(res.message || "Prediction completed and saved!");
-      setMessageIsError(false);
+    if (res.success && res.data?.predictions) {
+      updateSnackbar(snackbarId, {
+        variant: "success",
+        message: res.message || "Prediction completed and saved to your history.",
+      });
 
       // Reload predictions from database to get the stored ones
       await loadRecentPredictions();
       setSelectedSymbol(symbol);
     } else {
       const details = (res as any).details;
-      setMessage(details || res.error || "Failed to run prediction");
-      setMessageIsError(true);
+      updateSnackbar(snackbarId, {
+        variant: "error",
+        message: details || res.error || "Failed to run prediction.",
+      });
     }
 
     setLoading(false);
+    window.setTimeout(() => setProgress(0), 600);
   };
 
   // Filter predictions by selected symbol
@@ -156,6 +157,7 @@ export default function AIPredictionsPage() {
 
   // Build forecast chart data from predictions
   const forecastData = filteredPredictions
+    .slice()
     .sort(
       (a, b) =>
         new Date(a.predictionDate).getTime() -
@@ -185,8 +187,7 @@ export default function AIPredictionsPage() {
 
   const handleDownloadCSV = () => {
     if (filteredPredictions.length === 0) {
-      setMessage("No predictions to download");
-      setMessageIsError(true);
+      showSnackbar({ variant: "warning", message: "No predictions available to download." });
       return;
     }
 
@@ -201,14 +202,12 @@ export default function AIPredictionsPage() {
       latest?.llmSummary,
     );
 
-    setMessage("CSV report downloaded successfully!");
-    setMessageIsError(false);
+    showSnackbar({ variant: "success", message: "CSV report downloaded successfully." });
   };
 
   const handleDownloadJSON = () => {
     if (filteredPredictions.length === 0) {
-      setMessage("No predictions to download");
-      setMessageIsError(true);
+      showSnackbar({ variant: "warning", message: "No predictions available to download." });
       return;
     }
 
@@ -223,8 +222,7 @@ export default function AIPredictionsPage() {
 
     downloadPredictionsJSON(report);
 
-    setMessage("JSON report downloaded successfully!");
-    setMessageIsError(false);
+    showSnackbar({ variant: "success", message: "JSON report downloaded successfully." });
   };
 
   return (
@@ -367,12 +365,13 @@ export default function AIPredictionsPage() {
             </button>
           </div>
         </div>
-        {message && (
-          <p
-            className={`mt-3 text-sm ${messageIsError ? "text-red-400" : "text-primary"}`}
-          >
-            {message}
-          </p>
+        {loading && (
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-dark-200">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
         )}
       </div>
 

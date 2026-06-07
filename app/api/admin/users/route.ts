@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
           updatedAt: true,
           _count: {
             select: {
-              stocks: true,
+              predictions: true,
               agentLogs: true,
             },
           },
@@ -107,10 +107,6 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // For now, we log the action but don't actually modify user status
-    // since the original User model doesn't have an isActive field
-    // This preserves the existing database structure
-
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -121,6 +117,14 @@ export async function PATCH(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        isBlocked: action === 'deactivate',
+        blockedReason: action === 'deactivate' ? 'Account deactivated by admin.' : null,
+      },
+    });
 
     // Log the action
     const ipAddress = request.headers.get('x-forwarded-for') || 'unknown';
@@ -135,8 +139,8 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `User ${action} action logged successfully`,
-      data: user,
+      message: `User ${action}d successfully`,
+      data: updatedUser,
     });
   } catch (error) {
     console.error('Error updating user:', error);

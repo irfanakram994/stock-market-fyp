@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/userAuth";
+
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/predictions/recent - Get recent predictions grouped by stock
@@ -7,11 +10,22 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET(request: NextRequest) {
   try {
+    const user = await requireUser(request);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "10");
 
     // Get the most recent prediction for each stock, regardless of predictionDate timezone issues
     const predictions = await prisma.prediction.findMany({
+      where: {
+        userId: user.id,
+      },
       include: {
         stock: {
           select: {
