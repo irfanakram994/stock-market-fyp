@@ -5,7 +5,6 @@ import {
     TrendingUp,
     TrendingDown,
     Minus,
-    Search,
     ChevronLeft,
     ChevronRight,
     Loader,
@@ -13,6 +12,7 @@ import {
     Filter,
 } from 'lucide-react';
 import { adminFetch } from '@/lib/adminApi';
+import StockSymbolCombobox from '@/components/StockSymbolCombobox';
 
 interface Prediction {
     id: string;
@@ -179,14 +179,12 @@ export default function PredictionsPage() {
                     <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-5 gap-4">
                         <div>
                             <label className="block text-sm text-gray-400 mb-1">Stock Symbol</label>
-                            <input
-                                type="text"
+                            <StockSymbolCombobox
                                 value={filters.symbol}
-                                onChange={(e) =>
-                                    setFilters({ ...filters, symbol: e.target.value })
-                                }
-                                placeholder="e.g., AAPL"
-                                className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                                onChange={(symbol) => setFilters({ ...filters, symbol })}
+                                allowEmpty
+                                emptyLabel="All stocks"
+                                placeholder="All stocks"
                             />
                         </div>
                         <div>

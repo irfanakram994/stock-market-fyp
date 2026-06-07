@@ -5,12 +5,14 @@ import { Play, Loader, TrendingUp, TrendingDown } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { fetchBacktests, runBacktest, BacktestResult } from '@/lib/api';
 import { useSnackbar } from '@/components/SnackbarProvider';
+import StockSymbolCombobox from '@/components/StockSymbolCombobox';
+import { getLastSelectedStockSymbol } from '@/lib/stockCatalog';
 
 export default function BacktestingPage() {
     const { showSnackbar, updateSnackbar } = useSnackbar();
     const [running, setRunning] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [symbol, setSymbol] = useState('AAPL');
+    const [symbol, setSymbol] = useState(() => getLastSelectedStockSymbol());
     const [startDate, setStartDate] = useState('2025-01-01');
     const [endDate, setEndDate] = useState('2025-12-31');
     const [initialCapital, setInitialCapital] = useState(100000);
@@ -90,11 +92,9 @@ export default function BacktestingPage() {
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-400 mb-2">Stock Symbol</label>
-                        <input
-                            type="text"
+                        <StockSymbolCombobox
                             value={symbol}
-                            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                            className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg focus:outline-none focus:border-primary transition-colors text-gray-200"
+                            onChange={setSymbol}
                         />
                     </div>
                     <div>

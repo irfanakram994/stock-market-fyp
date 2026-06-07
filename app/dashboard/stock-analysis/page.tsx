@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { Search, TrendingUp, Loader, RefreshCw, Zap } from 'lucide-react';
-import { fetchMarketData, fetchNews, fetchNewsLive, fetchPredictions, runAgent, NewsItem } from '@/lib/api';
+import { TrendingUp, Loader, RefreshCw, Zap } from 'lucide-react';
+import { fetchMarketData, fetchNews, fetchNewsLive, fetchPredictions, fetchStocks, runAgent, NewsItem, Stock } from '@/lib/api';
 import { useSnackbar } from '@/components/SnackbarProvider';
+import StockSymbolCombobox from '@/components/StockSymbolCombobox';
+import { getLastSelectedStockSymbol, mergeStockOptions } from '@/lib/stockCatalog';
 
 const PriceChart = dynamic(() => import('@/components/Charts/PriceChart'), {
     loading: () => <div className="h-[300px] rounded-lg bg-slate-800/60 animate-pulse" />,
@@ -29,8 +31,8 @@ interface PredictionData {
 
 export default function StockAnalysisPage() {
     const { showSnackbar } = useSnackbar();
-    const [symbol, setSymbol] = useState('AAPL');
-    const [searchSymbol, setSearchSymbol] = useState('AAPL');
+    const [selectedSymbol, setSelectedSymbol] = useState(() => getLastSelectedStockSymbol());
+    const [userStocks, setUserStocks] = useState<Stock[]>([]);
     const [stockName, setStockName] = useState<string>('');
     const [news, setNews] = useState<NewsItem[]>([]);
     const [predictions, setPredictions] = useState<PredictionData[]>([]);
@@ -44,6 +46,14 @@ export default function StockAnalysisPage() {
     const [loadError, setLoadError] = useState<string | null>(null);
     const [newsError, setNewsError] = useState<string | null>(null);
     const requestSeq = useRef(0);
+
+    const stockOptions = useMemo(
+        () => mergeStockOptions(userStocks.map((stock) => ({
+            symbol: stock.symbol,
+            name: stock.name || stock.symbol,
+        }))),
+        [userStocks],
+    );
 
     const predictionChartData = predictions
         .map((p) => ({ date: p.date, price: p.predictedPrice }))
@@ -70,7 +80,8 @@ export default function StockAnalysisPage() {
 
             setPriceChartData([]);
             setLatestPrice(null);
-            setStockName(symUpper);
+            const knownStock = stockOptions.find((stock) => stock.symbol === symUpper);
+            setStockName(knownStock?.name || symUpper);
 
             if (newsRes.success && newsRes.data) {
                 setNews(newsRes.data);
@@ -114,16 +125,28 @@ export default function StockAnalysisPage() {
         } finally {
             if (requestSeq.current === seq) setLoading(false);
         }
-    }, []);
+    }, [stockOptions]);
 
     useEffect(() => {
-        loadStoredData(searchSymbol);
-    }, [searchSymbol, loadStoredData]);
+        loadStoredData(selectedSymbol);
+    }, [selectedSymbol, loadStoredData]);
+
+    useEffect(() => {
+        async function loadStockOptions() {
+            const res = await fetchStocks();
+            if (res.success && res.data) {
+                setUserStocks(res.data);
+            }
+        }
+
+        loadStockOptions();
+    }, []);
 
     const handleRunLiveAnalysis = useCallback(async () => {
         const seq = requestSeq.current + 1;
         requestSeq.current = seq;
-        const symUpper = searchSymbol.toUpperCase();
+        const symUpper = selectedSymbol.toUpperCase();
+
         setLiveLoading(true);
         setLoadError(null);
         setNewsError(null);
@@ -189,38 +212,24 @@ export default function StockAnalysisPage() {
         } finally {
             if (requestSeq.current === seq) setLiveLoading(false);
         }
-    }, [searchSymbol, showSnackbar]);
-
-    const handleSearch = () => {
-        setSearchSymbol(symbol.toUpperCase());
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') handleSearch();
-    };
+    }, [selectedSymbol, showSnackbar]);
 
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <h1 className="text-3xl font-bold mb-2">Stock Analysis</h1>
                     <p className="text-gray-400">Stored insights first, live agent analysis on demand</p>
                 </div>
 
-                {/* Stock Search */}
-                <div className="flex items-center gap-3">
-                    <div className="relative w-64">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                            type="text"
-                            value={symbol}
-                            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Enter symbol..."
-                            className="w-full pl-10 pr-4 py-2 bg-dark-200 border border-gray-700 rounded-lg focus:outline-none focus:border-primary transition-colors text-gray-200"
-                        />
-                    </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <StockSymbolCombobox
+                        value={selectedSymbol}
+                        onChange={setSelectedSymbol}
+                        stocks={userStocks.map((stock) => ({ symbol: stock.symbol, name: stock.name || stock.symbol }))}
+                        className="w-full sm:w-[360px]"
+                    />
                     <button
                         type="button"
                         onClick={handleRunLiveAnalysis}
@@ -243,8 +252,8 @@ export default function StockAnalysisPage() {
                     <div className="card">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h2 className="text-2xl font-bold mb-1">{searchSymbol}</h2>
-                                <p className="text-gray-400">{stockName || searchSymbol}</p>
+                                <h2 className="text-2xl font-bold mb-1">{selectedSymbol}</h2>
+                                <p className="text-gray-400">{stockName || selectedSymbol}</p>
                             </div>
                             <div className="text-right">
                                 <div className="text-3xl font-bold text-primary">
@@ -284,7 +293,7 @@ export default function StockAnalysisPage() {
                             </>
                         ) : (
                             <div className="h-[300px] flex flex-col items-center justify-center text-gray-400 gap-2">
-                                <p>No price data available for {searchSymbol}</p>
+                                <p>No price data available for {selectedSymbol}</p>
                                 <p className="text-sm">Run live analysis to fetch current market data from the agent.</p>
                                 {loadError && <p className="text-sm text-amber-400">{loadError}</p>}
                             </div>
@@ -362,7 +371,7 @@ export default function StockAnalysisPage() {
                             <p className="text-sm text-amber-400 mb-4">{newsError}</p>
                         )}
                         {news.length === 0 ? (
-                            <p className="text-gray-400 text-center py-8">No news found for {searchSymbol}</p>
+                            <p className="text-gray-400 text-center py-8">No news found for {selectedSymbol}</p>
                         ) : (
                             <div className="space-y-4">
                                 {news.map((item, idx) => (

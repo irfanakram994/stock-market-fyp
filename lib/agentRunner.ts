@@ -83,6 +83,24 @@ export interface RunPredictionResult {
   trend?: string;
   insight?: string;
   sentimentScore?: number;
+  sentimentArticles?: Array<{
+    title?: string;
+    description?: string;
+    content?: string;
+    source?: string;
+    author?: string;
+    url?: string;
+    imageUrl?: string;
+    publishedAt?: string;
+    sentiment?: {
+      score?: number;
+      compound?: number;
+      positive?: number;
+      negative?: number;
+      neutral?: number;
+      label?: string;
+    };
+  }>;
   error?: string;
 }
 
@@ -199,6 +217,7 @@ export async function runPredictionAgent(
       trend: output.data?.trend,
       insight: output.data?.insight,
       sentimentScore: output.data?.sentimentScore,
+      sentimentArticles: output.data?.sentimentArticles,
     };
   } catch (parseError) {
     const errMsg =

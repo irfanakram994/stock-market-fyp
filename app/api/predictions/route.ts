@@ -8,6 +8,113 @@ import { requireModuleEnabled } from "@/lib/moduleGuard";
 
 export const dynamic = "force-dynamic";
 
+type SentimentArticle = {
+  title?: string;
+  description?: string;
+  content?: string;
+  source?: string;
+  author?: string;
+  url?: string;
+  imageUrl?: string;
+  publishedAt?: string;
+  sentiment?: {
+    score?: number;
+    compound?: number;
+    positive?: number;
+    negative?: number;
+    neutral?: number;
+    label?: string;
+  };
+};
+
+function toFiniteNumber(value: unknown, fallback = 0) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function toDate(value: unknown) {
+  if (typeof value !== "string" || !value) return new Date();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date() : date;
+}
+
+async function saveSentimentArticles(stockId: string, articles?: SentimentArticle[]) {
+  if (!articles?.length) return 0;
+
+  let saved = 0;
+  for (const article of articles) {
+    const title = article.title?.trim();
+    const url = article.url?.trim();
+    if (!title || !url) continue;
+
+    const existing = await prisma.news.findFirst({
+      where: { stockId, url },
+      select: { id: true },
+    });
+
+    const news = existing
+      ? await prisma.news.update({
+          where: { id: existing.id },
+          data: {
+            title,
+            description: article.description || null,
+            content: article.content || null,
+            source: article.source || "Unknown",
+            author: article.author || null,
+            imageUrl: article.imageUrl || null,
+            publishedAt: toDate(article.publishedAt),
+          },
+          select: { id: true },
+        })
+      : await prisma.news.create({
+          data: {
+            stockId,
+            title,
+            description: article.description || null,
+            content: article.content || null,
+            source: article.source || "Unknown",
+            author: article.author || null,
+            url,
+            imageUrl: article.imageUrl || null,
+            publishedAt: toDate(article.publishedAt),
+          },
+          select: { id: true },
+        });
+
+    const sentiment = article.sentiment;
+    if (sentiment) {
+      const score = toFiniteNumber(sentiment.score);
+      await prisma.sentiment.upsert({
+        where: { newsId: news.id },
+        update: {
+          score,
+          compound: toFiniteNumber(sentiment.compound, score),
+          positive: toFiniteNumber(sentiment.positive),
+          negative: toFiniteNumber(sentiment.negative),
+          neutral: toFiniteNumber(sentiment.neutral, 1),
+          label:
+            sentiment.label ||
+            (score > 0.05 ? "positive" : score < -0.05 ? "negative" : "neutral"),
+        },
+        create: {
+          newsId: news.id,
+          score,
+          compound: toFiniteNumber(sentiment.compound, score),
+          positive: toFiniteNumber(sentiment.positive),
+          negative: toFiniteNumber(sentiment.negative),
+          neutral: toFiniteNumber(sentiment.neutral, 1),
+          label:
+            sentiment.label ||
+            (score > 0.05 ? "positive" : score < -0.05 ? "negative" : "neutral"),
+        },
+      });
+    }
+
+    saved += 1;
+  }
+
+  return saved;
+}
+
 /**
  * GET /api/predictions - Fetch all predictions from database
  */
@@ -183,6 +290,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const savedSentimentArticles = await saveSentimentArticles(
+      stock.id,
+      result.sentimentArticles,
+    );
+
     // 4. Log the agent execution
     await prisma.agentLog.update({
       where: { id: runningLog.id },
@@ -195,6 +307,7 @@ export async function POST(request: NextRequest) {
             currentPrice: result.currentPrice,
             trend: result.trend,
             sentimentScore: result.sentimentScore,
+            savedSentimentArticles,
             forecastDays: result.predictions?.length || 0,
             avgPredictedPrice: result.predictions
               ? result.predictions.reduce(
@@ -252,6 +365,7 @@ export async function POST(request: NextRequest) {
         trend: result.trend,
         insight: result.insight,
         sentimentScore: result.sentimentScore,
+        savedSentimentArticles,
         avgPredictedPrice: result.predictions
           ? result.predictions.reduce((sum, p) => sum + p.predictedPrice, 0) /
             result.predictions.length

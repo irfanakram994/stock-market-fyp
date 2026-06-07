@@ -18,6 +18,8 @@ import {
   formatPredictionData,
   type FullPredictionReport,
 } from "@/lib/predictionExport";
+import StockSymbolCombobox from "@/components/StockSymbolCombobox";
+import { getLastSelectedStockSymbol } from "@/lib/stockCatalog";
 
 interface StoredPrediction extends Prediction {
   symbol: string;
@@ -29,31 +31,10 @@ export default function AIPredictionsPage() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [progress, setProgress] = useState(0);
-  const [symbol, setSymbol] = useState("AAPL");
+  const [symbol, setSymbol] = useState(() => getLastSelectedStockSymbol());
   const [days, setDays] = useState(30);
   const [predictions, setPredictions] = useState<StoredPrediction[]>([]);
-  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
-
-  const availableSymbols = [
-    "AAPL","MSFT","NVDA","AMZN","GOOGL","META","TSLA","NFLX","AMD","INTC",
-    "AVGO","ORCL","CRM","ADBE","CSCO","QCOM","IBM","TXN","AMAT","MU",
-    "JPM","BAC","WFC","C","GS","MS","BLK","SCHW","AXP","USB",
-    "V","MA","PYPL","SQ","COF","BK","TFC","PNC","AIG","MET",
-    "JNJ","PFE","MRK","ABBV","LLY","TMO","DHR","ABT","BMY","CVS",
-    "UNH","CI","HUM","GILD","AMGN","ISRG","VRTX","REGN","SYK","MDT",
-    "XOM","CVX","COP","SLB","EOG","MPC","PSX","VLO","OXY","HAL",
-    "WMT","COST","HD","LOW","TGT","NKE","SBUX","MCD","KO","PEP",
-    "DIS","CMCSA","TMUS","VZ","T","CHTR","EA","TTWO","ROKU","SPOT",
-    "CAT","DE","GE","HON","MMM","BA","LMT","RTX","UPS","FDX",
-    "OGDC","PPL","POL","MARI","PSO",
-    "LUCK","DGKC","MLCF","FCCL","CHCC",
-    "FFC","EFERT","ENGRO","FATIMA","FFBL",
-    "HUBC","KEL","NCPL","KAPCO","PKGP",
-    "HBL","MCB","UBL","BAFL","MEBL",
-    "NBP","BOP","AKBL","FABL","HMB",
-    "SYS","TRG","AVN","NETSOL","OCTOPUS",
-    "SEARL","GLAXO","ABOT","AGP",
-  ];
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(() => getLastSelectedStockSymbol());
 
   // Load recent predictions from database on mount
   useEffect(() => {
@@ -174,17 +155,6 @@ export default function AIPredictionsPage() {
   const latestPrediction = filteredPredictions[0];
   const insight = latestPrediction?.llmSummary;
 
-  // Get symbol options for prediction form and keep existing predicted stocks
-  const symbolOptions = Array.from(
-    new Set([...availableSymbols, ...predictions.map((p) => p.symbol)]),
-  );
-
-  useEffect(() => {
-    if (symbolOptions.length > 0 && !symbolOptions.includes(symbol)) {
-      setSymbol(symbolOptions[0]);
-    }
-  }, [symbolOptions, symbol]);
-
   const handleDownloadCSV = () => {
     if (filteredPredictions.length === 0) {
       showSnackbar({ variant: "warning", message: "No predictions available to download." });
@@ -234,16 +204,6 @@ export default function AIPredictionsPage() {
           <p className="text-gray-400">
             Prophet-based forecasting with LLM insights
           </p>
-          <div className="mt-3 text-sm text-gray-500 max-w-2xl space-y-1">
-            <p>
-              Solid line = predicted price, dashed lines = lower/upper
-              confidence.
-            </p>
-            <p>
-              Hover over a point to see exact USD values. Use the dropdown to
-              select a stock.
-            </p>
-          </div>
         </div>
         <div className="flex gap-2">
           {/* Download buttons */}
@@ -280,31 +240,6 @@ export default function AIPredictionsPage() {
         </div>
       </div>
 
-      {/* Symbol Selector */}
-      {symbolOptions.length > 0 && (
-        <div className="card">
-          <h3 className="text-lg font-bold mb-3">Select Stock</h3>
-          <div className="flex flex-wrap gap-2">
-            {symbolOptions.map((sym) => (
-              <button
-                key={sym}
-                onClick={() => {
-                  setSelectedSymbol(sym);
-                  setSymbol(sym);
-                }}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  selectedSymbol === sym
-                    ? "bg-primary text-white"
-                    : "bg-dark-200 text-gray-200 hover:bg-dark-300"
-                }`}
-              >
-                {sym}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Prediction Form */}
       <div className="card">
         <h2 className="text-xl font-bold mb-4">Generate New Prediction</h2>
@@ -313,24 +248,17 @@ export default function AIPredictionsPage() {
             <label className="block text-sm font-medium text-gray-400 mb-2">
               Stock Symbol
             </label>
-            <select
+            <StockSymbolCombobox
               value={symbol}
-              onChange={(e) => {
-                setSymbol(e.target.value);
-                setSelectedSymbol(e.target.value);
+              onChange={(nextSymbol) => {
+                setSymbol(nextSymbol);
+                setSelectedSymbol(nextSymbol);
               }}
-              className="w-full px-4 py-2 bg-dark-200 border border-gray-700 rounded-lg focus:outline-none focus:border-primary transition-colors text-gray-200"
-            >
-              {symbolOptions.map((sym) => (
-                <option
-                  key={sym}
-                  value={sym}
-                  className="bg-slate-950 text-white"
-                >
-                  {sym}
-                </option>
-              ))}
-            </select>
+              stocks={predictions.map((prediction) => ({
+                symbol: prediction.symbol,
+                name: prediction.name || prediction.symbol,
+              }))}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">
@@ -443,7 +371,10 @@ export default function AIPredictionsPage() {
             {predictions.slice(0, 10).map((pred) => (
               <div
                 key={pred.id}
-                onClick={() => setSelectedSymbol(pred.symbol)}
+                onClick={() => {
+                  setSelectedSymbol(pred.symbol);
+                  setSymbol(pred.symbol);
+                }}
                 className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                   selectedSymbol === pred.symbol
                     ? "border-primary bg-primary/10"

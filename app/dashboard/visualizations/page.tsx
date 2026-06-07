@@ -3,12 +3,54 @@
 import { useEffect, useState } from 'react';
 import { Loader } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { fetchStocks, fetchPredictions, fetchNews, Stock, Prediction } from '@/lib/api';
+import { fetchStocks, fetchPredictions, fetchNews, fetchAgentLogs, Stock, Prediction, AgentLog } from '@/lib/api';
 import { useSnackbar } from '@/components/SnackbarProvider';
 
 interface SentimentPoint {
     date: string;
     sentiment: number;
+}
+
+function buildSentimentTimelineFromNews(news: Array<{ publishedAt: string; sentiment?: { score: number } }>) {
+    const grouped = news.reduce<Record<string, { total: number; count: number }>>((acc, item) => {
+        if (!item.sentiment) return acc;
+        const date = new Date(item.publishedAt).toLocaleDateString('en-CA');
+        if (!acc[date]) acc[date] = { total: 0, count: 0 };
+        acc[date].total += item.sentiment.score;
+        acc[date].count += 1;
+        return acc;
+    }, {});
+
+    return Object.entries(grouped)
+        .map(([date, value]) => ({
+            date,
+            sentiment: Number((value.total / value.count).toFixed(3)),
+        }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+}
+
+function buildSentimentTimelineFromLogs(logs: AgentLog[]) {
+    const seenRuns = new Set<string>();
+    const points = logs
+        .filter((log) => log.status === 'completed')
+        .map((log) => {
+            const output = log.output || {};
+            const input = log.input || {};
+            const score = output.sentimentScore;
+            if (typeof score !== 'number' || !Number.isFinite(score)) return null;
+
+            const runId = typeof input.runId === 'string' ? input.runId : log.id;
+            if (seenRuns.has(runId)) return null;
+            seenRuns.add(runId);
+
+            return {
+                date: new Date(log.completedAt || log.startedAt).toLocaleDateString('en-CA'),
+                sentiment: Number(score.toFixed(3)),
+            };
+        })
+        .filter((point): point is SentimentPoint => Boolean(point));
+
+    return points.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
 export default function VisualizationsPage() {
@@ -40,31 +82,23 @@ export default function VisualizationsPage() {
                 );
                 setPredictions(predMap);
 
-                const newsRes = await fetchNews(undefined, 100);
+                const [newsRes, logRes] = await Promise.all([
+                    fetchNews(undefined, 100),
+                    fetchAgentLogs('completed', 100),
+                ]);
                 if (newsRes.success && newsRes.data) {
-                    const grouped = newsRes.data.reduce<Record<string, { total: number; count: number }>>((acc, item) => {
-                        if (!item.sentiment) return acc;
-                        const date = new Date(item.publishedAt).toLocaleDateString('en-CA');
-                        if (!acc[date]) acc[date] = { total: 0, count: 0 };
-                        acc[date].total += item.sentiment.score;
-                        acc[date].count += 1;
-                        return acc;
-                    }, {});
-
+                    const newsTimeline = buildSentimentTimelineFromNews(newsRes.data);
                     setSentimentData(
-                        Object.entries(grouped)
-                            .map(([date, value]) => ({
-                                date,
-                                sentiment: Number((value.total / value.count).toFixed(3)),
-                            }))
-                            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                        newsTimeline.length > 0 || !logRes.success || !logRes.data
+                            ? newsTimeline
+                            : buildSentimentTimelineFromLogs(logRes.data)
                     );
                 } else if (!newsRes.success) {
                     showSnackbar({
                         variant: 'warning',
                         message: newsRes.error || 'Sentiment timeline data is unavailable right now.',
                     });
-                    setSentimentData([]);
+                    setSentimentData(logRes.success && logRes.data ? buildSentimentTimelineFromLogs(logRes.data) : []);
                 }
             } else {
                 setLoadError(stockRes.error || 'Failed to load tracked stocks.');
@@ -72,7 +106,7 @@ export default function VisualizationsPage() {
             setLoading(false);
         }
         loadData();
-    }, []);
+    }, [showSnackbar]);
 
     // Build multi-stock comparison data
     const allDates = new Set<string>();

@@ -78,6 +78,9 @@ class CrewAIOrchestrator:
                     "trend": trend,
                     "insight": insight,
                     "sentimentScore": self.state.sentiment_score,
+                    "sentimentArticles": self.state.sentiment_result.get("data", {}).get("articles", [])
+                    if self.state.sentiment_result and self.state.sentiment_result.get("success")
+                    else [],
                     "reportPath": report_path,
                     "framework": "crewai",
                 },

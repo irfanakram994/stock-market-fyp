@@ -84,6 +84,8 @@ def main():
                         "predictions": predictions.get("data", {}).get("predictions", []),
                         "trend": predictions.get("data", {}).get("trend", "neutral"),
                         "insight": insight.get("data", {}).get("insight") if insight.get("success") else None,
+                        "sentimentScore": sentiment.get("data", {}).get("aggregated", {}).get("score") if sentiment.get("success") else None,
+                        "sentimentArticles": sentiment.get("data", {}).get("articles", []) if sentiment.get("success") else [],
                     })
             except Exception as e:
                 result = {"success": False, "error": str(e)}
