@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { runAgentSync } from '@/lib/agentRunner';
-import { createUserNotification, ensureUserNotificationsTable } from '@/lib/notificationService';
+import { createUserNotification } from '@/lib/notificationService';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,8 +31,6 @@ export async function POST(request: NextRequest) {
     if (!cronSecret || cronSecret !== process.env.CRON_SECRET) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
-
-    await ensureUserNotificationsTable();
 
     const purchases = await prisma.$queryRaw<Array<{
       id: string;

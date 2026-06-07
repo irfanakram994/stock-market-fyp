@@ -18,50 +18,6 @@ export interface UserNotificationRecord {
   createdAt: string;
 }
 
-export async function ensureUserNotificationsTable() {
-  await prisma.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS user_notifications (
-      id BIGSERIAL PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      user_email TEXT,
-      source_type TEXT NOT NULL DEFAULT 'admin',
-      source_name TEXT,
-      source_key TEXT,
-      type TEXT NOT NULL DEFAULT 'info',
-      title TEXT NOT NULL DEFAULT '',
-      message TEXT NOT NULL DEFAULT '',
-      category TEXT NOT NULL DEFAULT 'general',
-      priority TEXT NOT NULL DEFAULT 'normal',
-      metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
-      is_read BOOLEAN NOT NULL DEFAULT FALSE,
-      read_at TIMESTAMPTZ,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
-
-  await prisma.$executeRawUnsafe(`
-    ALTER TABLE user_notifications
-      ADD COLUMN IF NOT EXISTS user_email TEXT,
-      ADD COLUMN IF NOT EXISTS source_type TEXT NOT NULL DEFAULT 'admin',
-      ADD COLUMN IF NOT EXISTS source_name TEXT,
-      ADD COLUMN IF NOT EXISTS source_key TEXT,
-      ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'info',
-      ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT '',
-      ADD COLUMN IF NOT EXISTS message TEXT NOT NULL DEFAULT '',
-      ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'general',
-      ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'normal',
-      ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
-      ADD COLUMN IF NOT EXISTS is_read BOOLEAN NOT NULL DEFAULT FALSE,
-      ADD COLUMN IF NOT EXISTS read_at TIMESTAMPTZ,
-      ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-  `);
-
-  await prisma.$executeRawUnsafe(`
-    CREATE UNIQUE INDEX IF NOT EXISTS user_notifications_source_key_idx
-      ON user_notifications (source_key)
-  `);
-}
-
 function parseRow(row: Record<string, unknown>): UserNotificationRecord {
   return {
     id: String(row.id),
@@ -95,8 +51,6 @@ export async function createUserNotification(input: {
   priority?: string;
   metadata?: Record<string, unknown>;
 }) {
-  await ensureUserNotificationsTable();
-
   const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
     INSERT INTO user_notifications (
       user_id,
@@ -158,8 +112,6 @@ export async function createUserNotification(input: {
 }
 
 export async function listUserNotifications(userId: string, limit = 20) {
-  await ensureUserNotificationsTable();
-
   const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
     SELECT
       id::text AS "id",
@@ -187,8 +139,6 @@ export async function listUserNotifications(userId: string, limit = 20) {
 }
 
 export async function countUnreadUserNotifications(userId: string) {
-  await ensureUserNotificationsTable();
-
   const rows = await prisma.$queryRaw<Array<{ count: bigint | number }>>`
     SELECT COUNT(*)::bigint AS count
     FROM user_notifications
@@ -199,8 +149,6 @@ export async function countUnreadUserNotifications(userId: string) {
 }
 
 export async function markUserNotificationsRead(userId: string, ids?: string[]) {
-  await ensureUserNotificationsTable();
-
   if (ids && ids.length > 0) {
     const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
       UPDATE user_notifications

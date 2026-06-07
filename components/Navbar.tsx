@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, Search, User, LogOut, Lock, ChevronDown } from 'lucide-react';
 import ChangePasswordModal from './ChangePasswordModal';
@@ -21,6 +21,7 @@ export default function Navbar() {
     const notificationRef = useRef<HTMLDivElement>(null);
     const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const seenNotificationIds = useRef<Set<string>>(new Set());
+    const notificationsInitialized = useRef(false);
     const router = useRouter();
 
     // Close dropdown when clicking outside
@@ -39,57 +40,69 @@ export default function Navbar() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const loadNotifications = useCallback(async (options: { allowToast?: boolean } = {}) => {
+        try {
+            const res = await fetchUserNotifications(5);
+            if (!res.success || !res.data) {
+                return;
+            }
+
+            setNotifications(res.data);
+            setUnreadCount(res.data.filter((item) => !item.isRead).length);
+
+            const newItems = res.data.filter((item) => !seenNotificationIds.current.has(item.id));
+            const shouldToast = Boolean(options.allowToast && notificationsInitialized.current && newItems.length > 0);
+            if (shouldToast) {
+                const latest = newItems[0];
+                setToastNotification(latest);
+
+                if (toastTimerRef.current) {
+                    clearTimeout(toastTimerRef.current);
+                }
+
+                toastTimerRef.current = setTimeout(() => {
+                    setToastNotification(null);
+                }, 2400);
+            }
+
+            res.data.forEach((item) => seenNotificationIds.current.add(item.id));
+            notificationsInitialized.current = true;
+        } catch {
+            // Keep silent so navbar never breaks on notification fetch issues.
+        }
+    }, []);
+
     useEffect(() => {
-        const loadNotifications = async () => {
-            try {
-                const res = await fetchUserNotifications(5);
-                if (!res.success || !res.data) {
-                    return;
-                }
+        loadNotifications();
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                void loadNotifications({ allowToast: true });
+            }
+        }, 180000);
 
-                setNotifications(res.data);
-                setUnreadCount(res.data.filter((item) => !item.isRead).length);
-
-                const newItems = res.data.filter((item) => !seenNotificationIds.current.has(item.id));
-                if (newItems.length > 0) {
-                    const latest = newItems[0];
-                    seenNotificationIds.current.add(latest.id);
-                    setToastNotification(latest);
-
-                    if (toastTimerRef.current) {
-                        clearTimeout(toastTimerRef.current);
-                    }
-
-                    toastTimerRef.current = setTimeout(() => {
-                        setToastNotification(null);
-                    }, 2000);
-
-                    await markUserNotificationsRead([latest.id]);
-                    setUnreadCount((current) => Math.max(0, current - 1));
-                    setNotifications((current) => current.map((notification) => (
-                        notification.id === latest.id ? { ...notification, isRead: true } : notification
-                    )));
-                }
-
-                res.data.forEach((item) => seenNotificationIds.current.add(item.id));
-            } catch {
-                // Keep silent so navbar never breaks on notification fetch issues.
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                void loadNotifications();
             }
         };
 
-        loadNotifications();
-        const interval = setInterval(loadNotifications, 30000);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
             clearInterval(interval);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
             if (toastTimerRef.current) {
                 clearTimeout(toastTimerRef.current);
             }
         };
-    }, []);
+    }, [loadNotifications]);
 
     const handleToggleNotifications = () => {
-        setShowNotifications((current) => !current);
+        setShowNotifications((current) => {
+            const next = !current;
+            if (next) void loadNotifications();
+            return next;
+        });
     };
 
     const handleNotificationClick = async (item: UserNotification) => {

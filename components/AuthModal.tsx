@@ -43,6 +43,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         setLoading(true);
 
         try {
+            let signedInAccessToken: string | undefined;
             if (isSignIn) {
                 // Sign in using client-side Supabase auth
                 const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -65,22 +66,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     return;
                 }
 
-                if (!data.user) {
+                if (!data.user || !data.session?.access_token) {
                     setError('Failed to sign in');
                     showSnackbar({ variant: 'error', message: 'Failed to sign in.' });
                     return;
                 }
 
-                const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-                if (sessionError || !sessionData.session) {
-                    setError('Login succeeded but session could not be established. Please try again.');
-                    showSnackbar({
-                        variant: 'warning',
-                        message: 'Login succeeded but the session could not be established. Please try again.',
-                    });
-                    return;
-                }
-
+                signedInAccessToken = data.session.access_token;
                 setAuthCookie();
                 showSnackbar({ variant: 'success', message: 'Signed in successfully.' });
             } else {
@@ -129,7 +121,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             setFormData({ email: '', password: '', name: '', confirmPassword: '' });
             onSuccess();
 
-            const roleResult = await resolveCurrentRole();
+            const roleResult = await resolveCurrentRole(signedInAccessToken);
             if (roleResult.success && roleResult.redirectTo) {
                 router.push(roleResult.redirectTo);
             } else {

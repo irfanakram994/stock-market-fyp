@@ -1,12 +1,23 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { Search, TrendingUp, Loader } from 'lucide-react';
-import PriceChart from '@/components/Charts/PriceChart';
-import RSIChart from '@/components/Charts/RSIChart';
-import MACDChart from '@/components/Charts/MACDChart';
-import { fetchMarketData, fetchNews, fetchNewsLive, runAgent, NewsItem } from '@/lib/api';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import dynamic from 'next/dynamic';
+import { Search, TrendingUp, Loader, RefreshCw, Zap } from 'lucide-react';
+import { fetchMarketData, fetchNews, fetchNewsLive, fetchPredictions, runAgent, NewsItem } from '@/lib/api';
 import { useSnackbar } from '@/components/SnackbarProvider';
+
+const PriceChart = dynamic(() => import('@/components/Charts/PriceChart'), {
+    loading: () => <div className="h-[300px] rounded-lg bg-slate-800/60 animate-pulse" />,
+    ssr: false,
+});
+const RSIChart = dynamic(() => import('@/components/Charts/RSIChart'), {
+    loading: () => <div className="h-[250px] rounded-lg bg-slate-800/60 animate-pulse" />,
+    ssr: false,
+});
+const MACDChart = dynamic(() => import('@/components/Charts/MACDChart'), {
+    loading: () => <div className="h-[250px] rounded-lg bg-slate-800/60 animate-pulse" />,
+    ssr: false,
+});
 
 interface PredictionData {
     date: string;
@@ -29,8 +40,10 @@ export default function StockAnalysisPage() {
     const [sentiment, setSentiment] = useState<number | null>(null);
     const [insight, setInsight] = useState<string>('');
     const [loading, setLoading] = useState(true);
+    const [liveLoading, setLiveLoading] = useState(false);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [newsError, setNewsError] = useState<string | null>(null);
+    const requestSeq = useRef(0);
 
     const predictionChartData = predictions
         .map((p) => ({ date: p.date, price: p.predictedPrice }))
@@ -39,72 +52,54 @@ export default function StockAnalysisPage() {
     const displayChartData = priceChartData.length > 0 ? priceChartData : predictionChartData;
     const chartSourceLabel = priceChartData.length > 0 ? 'Market price history' : predictionChartData.length > 0 ? 'Prediction history' : null;
 
-    const loadData = useCallback(async (sym: string) => {
+    const loadStoredData = useCallback(async (sym: string) => {
+        const seq = requestSeq.current + 1;
+        requestSeq.current = seq;
         setLoading(true);
         setLoadError(null);
         setNewsError(null);
         const symUpper = sym.toUpperCase();
 
         try {
-            const [marketRes, newsRes, predRes] = await Promise.all([
-                fetchMarketData(symUpper),
-                fetchNewsLive(symUpper),
-                runAgent('prediction', symUpper, 30),
+            const [newsRes, predRes] = await Promise.all([
+                fetchNews(symUpper, 20),
+                fetchPredictions(symUpper, 10),
             ]);
 
-            if (marketRes.success && marketRes.data?.prices?.length) {
-                const prices = marketRes.data.prices
-                    .map((p) => ({ date: p.date.split('T')[0] || p.date, price: p.price }))
-                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                setPriceChartData(prices);
-                setLatestPrice(prices[prices.length - 1]?.price ?? null);
-                setStockName((marketRes.data.info as { name?: string })?.name || symUpper);
-            } else {
-                setPriceChartData([]);
-                setLatestPrice(null);
-                setStockName(symUpper);
-                setLoadError(
-                    marketRes.error ||
-                    (marketRes.success ? 'No market price data available for this symbol.' : 'No market data'),
-                );
-            }
+            if (requestSeq.current !== seq) return;
+
+            setPriceChartData([]);
+            setLatestPrice(null);
+            setStockName(symUpper);
 
             if (newsRes.success && newsRes.data) {
                 setNews(newsRes.data);
             } else {
                 setNews([]);
-                const fallbackRes = await fetchNews(symUpper);
-                if (fallbackRes.success && fallbackRes.data) {
-                    setNews(fallbackRes.data);
-                    setNewsError(
-                        newsRes.error
-                            ? `Live news unavailable: ${newsRes.error}. Showing stored news.`
-                            : 'Live news unavailable; showing stored news.',
-                    );
-                } else {
-                    setNewsError(
-                        newsRes.error || fallbackRes.error || 'No news available for this symbol.',
-                    );
-                }
+                if (!newsRes.success) setNewsError(newsRes.error || 'Stored news is unavailable for this symbol.');
             }
 
             if (predRes.success && predRes.data) {
-                const pd = predRes.data as any;
-                setPredictions(pd.predictions || []);
-                setTrend(pd.trend || '');
-                setSentiment(pd.sentimentScore ?? null);
-                setInsight(pd.insight || '');
+                const stored = predRes.data.map((p) => ({
+                    date: p.predictionDate,
+                    predictedPrice: p.predictedPrice,
+                    lowerBound: p.lowerBound,
+                    upperBound: p.upperBound,
+                    confidence: p.confidence,
+                }));
+                setPredictions(stored);
+                setTrend(predRes.data[0]?.trend || '');
+                setSentiment(null);
+                setInsight(predRes.data[0]?.llmSummary || '');
             } else {
                 setPredictions([]);
                 setTrend('');
                 setSentiment(null);
                 setInsight('');
-                showSnackbar({
-                    variant: 'warning',
-                    message: predRes.error || `Prediction preview for ${symUpper} was unavailable.`,
-                });
+                if (!predRes.success) setLoadError(predRes.error || `Stored predictions for ${symUpper} are unavailable.`);
             }
         } catch (error) {
+            if (requestSeq.current !== seq) return;
             const message = error instanceof Error ? error.message : String(error);
             setLoadError(`Failed to load stock data: ${message}`);
             setPriceChartData([]);
@@ -117,13 +112,84 @@ export default function StockAnalysisPage() {
             setSentiment(null);
             setInsight('');
         } finally {
-            setLoading(false);
+            if (requestSeq.current === seq) setLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        loadData(searchSymbol);
-    }, [searchSymbol, loadData]);
+        loadStoredData(searchSymbol);
+    }, [searchSymbol, loadStoredData]);
+
+    const handleRunLiveAnalysis = useCallback(async () => {
+        const seq = requestSeq.current + 1;
+        requestSeq.current = seq;
+        const symUpper = searchSymbol.toUpperCase();
+        setLiveLoading(true);
+        setLoadError(null);
+        setNewsError(null);
+
+        try {
+            const [marketRes, newsRes, predRes] = await Promise.all([
+                fetchMarketData(symUpper),
+                fetchNewsLive(symUpper),
+                runAgent('prediction', symUpper, 30),
+            ]);
+
+            if (requestSeq.current !== seq) return;
+
+            if (marketRes.success && marketRes.data?.prices?.length) {
+                const prices = marketRes.data.prices
+                    .map((p) => ({ date: p.date.split('T')[0] || p.date, price: p.price }))
+                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                setPriceChartData(prices);
+                setLatestPrice(prices[prices.length - 1]?.price ?? null);
+                setStockName((marketRes.data.info as { name?: string })?.name || symUpper);
+            } else {
+                setPriceChartData([]);
+                setLatestPrice(null);
+                setLoadError(
+                    marketRes.error ||
+                    (marketRes.success ? 'No market price data available for this symbol.' : 'No market data'),
+                );
+            }
+
+            if (newsRes.success && newsRes.data) {
+                setNews(newsRes.data);
+            } else {
+                const fallbackRes = await fetchNews(symUpper);
+                if (requestSeq.current !== seq) return;
+                if (fallbackRes.success && fallbackRes.data) {
+                    setNews(fallbackRes.data);
+                    setNewsError(
+                        newsRes.error
+                            ? `Live news unavailable: ${newsRes.error}. Showing stored news.`
+                            : 'Live news unavailable; showing stored news.',
+                    );
+                } else {
+                    setNewsError(newsRes.error || fallbackRes.error || 'No news available for this symbol.');
+                }
+            }
+
+            if (predRes.success && predRes.data) {
+                const pd = predRes.data as any;
+                setPredictions(pd.predictions || []);
+                setTrend(pd.trend || '');
+                setSentiment(pd.sentimentScore ?? null);
+                setInsight(pd.insight || '');
+            } else {
+                showSnackbar({
+                    variant: 'warning',
+                    message: predRes.error || `Live prediction for ${symUpper} was unavailable.`,
+                });
+            }
+        } catch (error) {
+            if (requestSeq.current !== seq) return;
+            const message = error instanceof Error ? error.message : String(error);
+            setLoadError(`Failed to run live analysis: ${message}`);
+        } finally {
+            if (requestSeq.current === seq) setLiveLoading(false);
+        }
+    }, [searchSymbol, showSnackbar]);
 
     const handleSearch = () => {
         setSearchSymbol(symbol.toUpperCase());
@@ -139,20 +205,31 @@ export default function StockAnalysisPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold mb-2">Stock Analysis</h1>
-                    <p className="text-gray-400">Real-time data and technical indicators</p>
+                    <p className="text-gray-400">Stored insights first, live agent analysis on demand</p>
                 </div>
 
                 {/* Stock Search */}
-                <div className="relative w-64">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                        type="text"
-                        value={symbol}
-                        onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Enter symbol..."
-                        className="w-full pl-10 pr-4 py-2 bg-dark-200 border border-gray-700 rounded-lg focus:outline-none focus:border-primary transition-colors text-gray-200"
-                    />
+                <div className="flex items-center gap-3">
+                    <div className="relative w-64">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                            type="text"
+                            value={symbol}
+                            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Enter symbol..."
+                            className="w-full pl-10 pr-4 py-2 bg-dark-200 border border-gray-700 rounded-lg focus:outline-none focus:border-primary transition-colors text-gray-200"
+                        />
+                    </div>
+                    <button
+                        type="button"
+                        onClick={handleRunLiveAnalysis}
+                        disabled={liveLoading || loading}
+                        className="btn-primary inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        {liveLoading ? <Loader className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                        {liveLoading ? 'Analyzing...' : 'Run Live Analysis'}
+                    </button>
                 </div>
             </div>
 
@@ -181,10 +258,15 @@ export default function StockAnalysisPage() {
                                 )}
                             </div>
                         </div>
-                        {loadError && (
-                            <p className="text-amber-400 text-sm mt-2">{loadError}</p>
-                        )}
-                    </div>
+                                {loadError && (
+                                    <p className="text-amber-400 text-sm mt-2">{loadError}</p>
+                                )}
+                                {!liveLoading && priceChartData.length === 0 && predictions.length > 0 && (
+                                    <p className="text-slate-500 text-sm mt-2">
+                                        Showing stored prediction data. Run live analysis for current market data.
+                                    </p>
+                                )}
+                            </div>
 
                     {/* Price Chart */}
                     <div className="card">
@@ -203,7 +285,7 @@ export default function StockAnalysisPage() {
                         ) : (
                             <div className="h-[300px] flex flex-col items-center justify-center text-gray-400 gap-2">
                                 <p>No price data available for {searchSymbol}</p>
-                                <p className="text-sm">Ensure Python agents are installed and the market agent can reach Yahoo Finance.</p>
+                                <p className="text-sm">Run live analysis to fetch current market data from the agent.</p>
                                 {loadError && <p className="text-sm text-amber-400">{loadError}</p>}
                             </div>
                         )}
@@ -267,6 +349,15 @@ export default function StockAnalysisPage() {
                     {/* News Feed */}
                     <div className="card">
                         <h3 className="text-xl font-bold mb-4">Recent News</h3>
+                        <button
+                            type="button"
+                            onClick={handleRunLiveAnalysis}
+                            disabled={liveLoading}
+                            className="mb-4 inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 transition-colors hover:border-primary/60 hover:bg-slate-700 disabled:opacity-60"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${liveLoading ? 'animate-spin' : ''}`} />
+                            Refresh live data
+                        </button>
                         {newsError && (
                             <p className="text-sm text-amber-400 mb-4">{newsError}</p>
                         )}

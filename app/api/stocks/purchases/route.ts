@@ -27,31 +27,9 @@ async function resolveCurrentUser(request: NextRequest) {
     return data.user;
 }
 
-async function ensureStockPurchasesTable() {
-    await prisma.$executeRawUnsafe(`
-        CREATE TABLE IF NOT EXISTS stock_purchases (
-            id BIGSERIAL PRIMARY KEY,
-            user_id TEXT,
-            user_email TEXT,
-            stock_name TEXT NOT NULL,
-            purchase_amount NUMERIC(14,2) NOT NULL CHECK (purchase_amount >= 0),
-            purchase_date DATE NOT NULL,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )
-    `);
-
-    await prisma.$executeRawUnsafe(`
-        ALTER TABLE stock_purchases
-            ADD COLUMN IF NOT EXISTS user_id TEXT,
-            ADD COLUMN IF NOT EXISTS user_email TEXT
-    `);
-}
-
 // GET /api/stocks/purchases - List saved stock purchases
 export async function GET(request: NextRequest) {
     try {
-        await ensureStockPurchasesTable();
-
         const user = await resolveCurrentUser(request);
         if (!user) {
             return NextResponse.json(
@@ -130,10 +108,6 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Create a dedicated purchases table if it does not exist.
-        // This keeps purchase entries independent from the unique stock symbol table.
-        await ensureStockPurchasesTable();
-
         const rows = await prisma.$queryRaw<StockPurchaseRow[]>`
             INSERT INTO stock_purchases (user_id, user_email, stock_name, purchase_amount, purchase_date)
             VALUES (${user.id}, ${user.email || ''}, ${stockName}, ${purchaseAmount}, ${purchaseDate}::date)
@@ -170,8 +144,6 @@ export async function POST(request: NextRequest) {
 // DELETE /api/stocks/purchases?id=123 - Delete a saved stock purchase
 export async function DELETE(request: NextRequest) {
     try {
-        await ensureStockPurchasesTable();
-
         const user = await resolveCurrentUser(request);
         if (!user) {
             return NextResponse.json(

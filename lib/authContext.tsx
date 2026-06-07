@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
 const AUTH_COOKIE_NAME = 'tradeflux-auth';
@@ -51,6 +51,9 @@ interface UserApiResponse {
   error?: string;
 }
 
+const profileCache = new Map<string, User>();
+const profileRequests = new Map<string, Promise<User | null>>();
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -63,24 +66,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const currentUserIdRef = useRef<string | null>(null);
 
-  const mapSupabaseUser = (authUser: any): User => ({
+  const mapSupabaseUser = useCallback((authUser: any): User => ({
     id: authUser.id,
     email: authUser.email || '',
     name: authUser.user_metadata?.name || null,
     gender: authUser.user_metadata?.gender || null,
     profileImage: authUser.user_metadata?.profileImage || null,
-  });
+  }), []);
 
-  const getSessionTokens = async () => {
-    const { data } = await supabase.auth.getSession();
-    return {
-      accessToken: data.session?.access_token,
-      refreshToken: data.session?.refresh_token,
-    };
-  };
-
-  const clearCurrentSession = async () => {
+  const clearCurrentSession = useCallback(async () => {
     try {
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) {
@@ -93,9 +89,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAuthCookie(false);
       clearSupabaseBrowserStorage();
     }
-  };
+  }, []);
 
-  const fetchDbProfile = async (accessToken: string, refreshToken?: string): Promise<User | null> => {
+  const fetchDbProfile = useCallback(async (userId: string, accessToken: string, refreshToken?: string): Promise<User | null> => {
+    const cached = profileCache.get(userId);
+    if (cached) return cached;
+
+    const existing = profileRequests.get(userId);
+    if (existing) return existing;
+
+    const request = (async () => {
     try {
       const response = await fetch('/api/auth/user', {
         method: 'POST',
@@ -115,74 +118,90 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const payload: UserApiResponse = await response.json();
       if (!payload.success || !payload.data) return null;
+      profileCache.set(userId, payload.data);
       return payload.data;
     } catch {
       return null;
+    } finally {
+      profileRequests.delete(userId);
     }
-  };
+    })();
 
-  const loadCurrentUser = async () => {
-    const { data } = await supabase.auth.getSession();
-    const session = data.session;
+    profileRequests.set(userId, request);
+    return request;
+  }, [clearCurrentSession]);
 
+  const hydrateSession = useCallback(async (session: any, options: { blockForProfile?: boolean } = {}) => {
     if (!session?.user) {
       setUser(null);
+      currentUserIdRef.current = null;
       setAuthCookie(false);
       return;
     }
 
-    const { accessToken, refreshToken } = await getSessionTokens();
-    if (accessToken) {
-      const dbUser = await fetchDbProfile(accessToken, refreshToken);
-      if (dbUser) {
-        setUser(dbUser);
-        setAuthCookie(true);
-        return;
-      }
-    }
+    const fallbackUser = mapSupabaseUser(session.user);
+    currentUserIdRef.current = fallbackUser.id;
 
-    setUser(mapSupabaseUser(session.user));
+    const cached = profileCache.get(fallbackUser.id);
+    setUser(cached || fallbackUser);
     setAuthCookie(true);
-  };
+
+    const accessToken = session.access_token;
+    if (!accessToken) return;
+
+    const applyProfile = async () => {
+      const dbUser = await fetchDbProfile(fallbackUser.id, accessToken, session.refresh_token);
+      if (dbUser) {
+        setUser((current) => (current?.id === dbUser.id ? dbUser : current));
+      }
+    };
+
+    if (options.blockForProfile && !cached) {
+      await applyProfile();
+    } else {
+      void applyProfile();
+    }
+  }, [fetchDbProfile, mapSupabaseUser]);
+
+  const loadCurrentUser = useCallback(async (options: { blockForProfile?: boolean } = {}) => {
+    const { data } = await supabase.auth.getSession();
+    await hydrateSession(data.session, options);
+  }, [hydrateSession]);
 
   useEffect(() => {
+    let mounted = true;
+
     // Check if user is logged in on mount
     const checkUser = async () => {
       try {
-        await loadCurrentUser();
+        await loadCurrentUser({ blockForProfile: false });
       } catch (error) {
         console.error('Error checking user:', error);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
     checkUser();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'INITIAL_SESSION') return;
       if (!session?.user) {
         setUser(null);
+        currentUserIdRef.current = null;
         setAuthCookie(false);
         return;
       }
 
-      const accessToken = session.access_token;
-      if (accessToken) {
-        const dbUser = await fetchDbProfile(accessToken, session.refresh_token);
-        if (dbUser) {
-          setUser(dbUser);
-          setAuthCookie(true);
-          return;
-        }
-      }
-
-      setUser(mapSupabaseUser(session.user));
-      setAuthCookie(true);
+      await hydrateSession(session, { blockForProfile: false });
     });
 
-    return () => subscription?.unsubscribe();
-  }, []);
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe();
+    };
+  }, [hydrateSession, loadCurrentUser]);
 
   const signOut = async () => {
     try {
@@ -193,7 +212,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error signing out:', error);
     } finally {
+      if (user?.id) profileCache.delete(user.id);
       setUser(null);
+      currentUserIdRef.current = null;
       setAuthCookie(false);
       clearSupabaseBrowserStorage();
     }
@@ -201,7 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     try {
-      await loadCurrentUser();
+      await loadCurrentUser({ blockForProfile: true });
     } catch (error) {
       console.error('Error refreshing user:', error);
     }

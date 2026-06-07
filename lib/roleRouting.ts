@@ -10,10 +10,13 @@ export interface RoleResolution {
   code?: string;
 }
 
-export async function resolveCurrentRole(): Promise<RoleResolution> {
+export async function resolveCurrentRole(accessTokenOverride?: string): Promise<RoleResolution> {
   try {
-    const { data } = await supabase.auth.getSession();
-    const accessToken = data.session?.access_token;
+    let accessToken = accessTokenOverride;
+    if (!accessToken) {
+      const { data } = await supabase.auth.getSession();
+      accessToken = data.session?.access_token;
+    }
     if (!accessToken) {
       return { success: false, error: 'Not authenticated' };
     }

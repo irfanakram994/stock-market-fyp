@@ -16,19 +16,6 @@ logging.getLogger("prophet.plot").setLevel(logging.CRITICAL)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config import Config
-try:
-    from crew.orchestrator import CrewAIOrchestrator
-except ModuleNotFoundError as e:
-    print(
-        "Missing dependency: 'crewai' not found in the current Python environment.\n"
-        "Please activate the project's virtual environment and try again:\n"
-        "  PowerShell:  (Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned) ; (& .venv\\Scripts\\Activate.ps1)\n"
-        "  cmd.exe:    .venv\\Scripts\\activate.bat\n"
-        "Or run the script explicitly with the venv Python:\n"
-        f"  {os.path.join(sys.path[0], '.venv', 'Scripts', 'python.exe')} apps/agents/main.py --agent prediction --symbol AAPL --days 7\n",
-        file=sys.stderr,
-    )
-    sys.exit(1)
 from utils.helpers import get_logger, to_json
 from services.market_data_service import fetch_historical_data
 from services.news_service import fetch_news
@@ -57,7 +44,17 @@ def main():
     
     args = parser.parse_args()
     
-    # Validate configuration (write to stderr so Node.js can capture it)
+    symbol = args.symbol.upper()
+
+    if args.agent == 'news':
+        if not Config.NEWS_API_KEY:
+            print("Configuration error: NEWS_API_KEY is required", file=sys.stderr)
+            sys.exit(1)
+        result = fetch_news(symbol)
+        print(to_json(result))
+        return
+
+    # Validate full agent configuration only for LLM/forecast workflows.
     try:
         Config.validate()
     except ValueError as e:
@@ -66,9 +63,6 @@ def main():
     
     if args.framework and args.framework.lower() != "crewai":
         logger.warning("Legacy framework option selected; running direct pipeline.")
-
-    symbol = args.symbol.upper()
-    orchestrator = CrewAIOrchestrator(symbol=symbol, forecast_days=args.days)
 
     if args.framework and args.framework.lower() == "legacy":
         # Run the direct pipeline sequentially only for full prediction requests.
@@ -103,9 +97,23 @@ def main():
             else:
                 result = {'success': False, 'error': 'Unsupported agent'}
     else:
-        if args.agent == 'news':
-            result = orchestrator.run_news()
-        elif args.agent == 'market':
+        try:
+            from crew.orchestrator import CrewAIOrchestrator
+        except ModuleNotFoundError:
+            print(
+                "Missing dependency: 'crewai' not found in the current Python environment.\n"
+                "Please activate the project's virtual environment and try again:\n"
+                "  PowerShell:  (Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned) ; (& .venv\\Scripts\\Activate.ps1)\n"
+                "  cmd.exe:    .venv\\Scripts\\activate.bat\n"
+                "Or run the script explicitly with the venv Python:\n"
+                f"  {os.path.join(sys.path[0], '.venv', 'Scripts', 'python.exe')} apps/agents/main.py --agent prediction --symbol AAPL --days 7\n",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        orchestrator = CrewAIOrchestrator(symbol=symbol, forecast_days=args.days)
+
+        if args.agent == 'market':
             result = orchestrator.run_market()
         elif args.agent == 'sentiment':
             result = orchestrator.run_sentiment()

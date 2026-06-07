@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { runAgentSync, runPredictionAgent } from "@/lib/agentRunner";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/userAuth";
+import { randomUUID } from "crypto";
 
 /** POST /api/agents/run - Execute Python agents (Prophet, OpenAI/Groq LLM, News) - NO DB */
 export async function POST(request: NextRequest) {
   let logId: string | null = null;
   const startedAt = Date.now();
+  const runId = randomUUID();
 
   try {
     const user = await requireUser(request);
@@ -30,7 +32,7 @@ export async function POST(request: NextRequest) {
     const symbolUpper = symbol.toString().toUpperCase();
     const agentName =
       agent === "prediction"
-        ? "PredictionAgent"
+        ? "PredictionPreviewAgent"
         : `${String(agent).charAt(0).toUpperCase()}${String(agent).slice(1)}Agent`;
 
     const runningLog = await prisma.agentLog.create({
@@ -38,7 +40,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         agentName,
         status: "running",
-        input: { agent, symbol: symbolUpper, forecastDays },
+        input: { agent, symbol: symbolUpper, forecastDays, runId, stageOrder: 1, mode: "preview" },
       },
     });
     logId = runningLog.id;
@@ -80,10 +82,11 @@ export async function POST(request: NextRequest) {
     await prisma.agentLog.update({
       where: { id: runningLog.id },
       data: {
-        status: "completed",
-        output: data,
-        duration: Date.now() - startedAt,
-        completedAt: new Date(),
+          status: "completed",
+          output: data,
+          input: { agent, symbol: symbolUpper, forecastDays, runId, stageOrder: 1, mode: "preview" },
+          duration: Date.now() - startedAt,
+          completedAt: new Date(),
       },
     });
 

@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 import { runAgentSync } from '@/lib/agentRunner';
 
+interface MarketCacheEntry {
+    expiresAt: number;
+    data: {
+        symbol: string;
+        prices: Array<{ date: string; price: number }>;
+        info?: Record<string, unknown>;
+    };
+}
+
+const MARKET_CACHE_TTL_MS = 5 * 60 * 1000;
+const marketCache = new Map<string, MarketCacheEntry>();
+
 /**
  * GET /api/market?symbol=AAPL - Fetch live market data from yfinance via Python agent
  * No database - uses Yahoo Finance directly
@@ -9,7 +21,7 @@ import { runAgentSync } from '@/lib/agentRunner';
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
-        const symbol = searchParams.get('symbol');
+        const symbol = searchParams.get('symbol')?.trim().toUpperCase();
 
         if (!symbol) {
             return NextResponse.json(
@@ -18,7 +30,16 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const result = await runAgentSync('market', symbol.toUpperCase(), 30);
+        const cached = marketCache.get(symbol);
+        if (cached && cached.expiresAt > Date.now()) {
+            return NextResponse.json({
+                success: true,
+                data: cached.data,
+                cached: true,
+            });
+        }
+
+        const result = await runAgentSync('market', symbol, 30);
 
         if (!result.success) {
             return NextResponse.json(
@@ -38,13 +59,21 @@ export async function GET(request: NextRequest) {
             }))
             .filter((p) => p.date && p.price > 0);
 
+        const responseData = {
+            symbol: data?.symbol || symbol,
+            prices,
+            info: data?.info,
+        };
+
+        marketCache.set(symbol, {
+            data: responseData,
+            expiresAt: Date.now() + MARKET_CACHE_TTL_MS,
+        });
+
         return NextResponse.json({
             success: true,
-            data: {
-                symbol: data?.symbol || symbol,
-                prices,
-                info: data?.info,
-            },
+            data: responseData,
+            cached: false,
         });
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);

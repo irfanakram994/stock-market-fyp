@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { TrendingUp, DollarSign, Target, Activity, Loader, Plus, X, List, Trash2, BadgeCheck, WalletCards, BarChart2 } from 'lucide-react';
 import MetricCard from '@/components/Cards/MetricCard';
-import { createStockPurchase, deleteStockPurchase, fetchMarketData, fetchPredictions, fetchStocks, fetchAgentLogs, fetchStockPurchases, Prediction, Stock, AgentLog, StockPurchase } from '@/lib/api';
+import { createStockPurchase, deleteStockPurchase, fetchDashboardSummary, fetchMarketData, fetchPredictions, fetchStockPurchases, Prediction, Stock, AgentLog, StockPurchase } from '@/lib/api';
 
 const getTodayDate = () => new Date().toISOString().split('T')[0];
 
@@ -90,14 +90,12 @@ export default function DashboardPage() {
     useEffect(() => {
         async function loadData() {
             setLoading(true);
-            const [predRes, stockRes, logRes] = await Promise.all([
-                fetchPredictions(undefined, 10),
-                fetchStocks(),
-                fetchAgentLogs(undefined, 50),
-            ]);
-            if (predRes.success && predRes.data) setPredictions(predRes.data);
-            if (stockRes.success && stockRes.data) setStocks(stockRes.data);
-            if (logRes.success && logRes.data) setAgentLogs(logRes.data);
+            const summaryRes = await fetchDashboardSummary();
+            if (summaryRes.success && summaryRes.data) {
+                setPredictions(summaryRes.data.predictions);
+                setStocks(summaryRes.data.stocks);
+                setAgentLogs(summaryRes.data.agentLogs);
+            }
             setLoading(false);
         }
         loadData();

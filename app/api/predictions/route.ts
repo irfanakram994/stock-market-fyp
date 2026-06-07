@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { runPredictionAgent } from "@/lib/agentRunner";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/userAuth";
+import { randomUUID } from "crypto";
+import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +68,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   let logId: string | null = null;
   const startedAt = Date.now();
+  const runId = randomUUID();
 
   try {
     const user = await requireUser(request);
@@ -91,9 +94,9 @@ export async function POST(request: NextRequest) {
     const runningLog = await prisma.agentLog.create({
       data: {
         userId: user.id,
-        agentName: "PredictionAgent",
+        agentName: "PredictionOrchestrator",
         status: "running",
-        input: { symbol: symbolUpper, forecastDays },
+        input: { symbol: symbolUpper, forecastDays, runId, stageOrder: 0, mode: "full_prediction" },
       },
     });
     logId = runningLog.id;
@@ -179,9 +182,9 @@ export async function POST(request: NextRequest) {
     await prisma.agentLog.update({
       where: { id: runningLog.id },
       data: {
-          agentName: "PredictionAgent",
+          agentName: "PredictionOrchestrator",
           status: "completed",
-          input: { symbol: symbolUpper, forecastDays },
+          input: { symbol: symbolUpper, forecastDays, runId, stageOrder: 0, mode: "full_prediction" },
           output: {
             symbol: result.symbol,
             currentPrice: result.currentPrice,
@@ -198,6 +201,40 @@ export async function POST(request: NextRequest) {
           duration: Date.now() - startedAt,
           completedAt: new Date(),
       },
+    });
+
+    const completedAt = new Date();
+    const stageNames = [
+      "MarketDataAgent",
+      "NewsFetcherAgent",
+      "SentimentAgent",
+      "PreprocessingAgent",
+      "ForecastAgent",
+      "InsightAgent",
+      "PredictionAgent",
+    ];
+    await prisma.agentLog.createMany({
+      data: stageNames.map((agentName, index) => {
+        const output: Record<string, string | number | null | undefined> = {
+          symbol: result.symbol,
+          trend: result.trend,
+          stage: agentName,
+        };
+        if (agentName === "MarketDataAgent") output.currentPrice = result.currentPrice;
+        if (agentName === "SentimentAgent") output.sentimentScore = result.sentimentScore;
+        if (agentName === "ForecastAgent") output.forecastDays = result.predictions?.length || 0;
+
+        return {
+          userId: user.id,
+          agentName,
+          status: "completed",
+          input: { symbol: symbolUpper, forecastDays, runId, stageOrder: index + 1, mode: "full_prediction" },
+          output: output as Prisma.InputJsonObject,
+          duration: Math.max(1, Math.round((Date.now() - startedAt) / stageNames.length)),
+          startedAt: new Date(startedAt + index),
+          completedAt,
+        };
+      }),
     });
 
     return NextResponse.json({

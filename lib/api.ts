@@ -79,6 +79,16 @@ export function deleteStockPurchase(id: string) {
     }, { includeAuth: true });
 }
 
+export interface DashboardSummary {
+    predictions: Prediction[];
+    stocks: Stock[];
+    agentLogs: AgentLog[];
+}
+
+export function fetchDashboardSummary() {
+    return fetchApi<DashboardSummary>('/api/dashboard/summary', undefined, { includeAuth: true });
+}
+
 export interface UserNotification {
     id: string;
     userId: string;
@@ -224,11 +234,25 @@ export interface AgentLog {
     completedAt?: string;
 }
 
+export interface AgentLogRunGroup {
+    runId: string;
+    mode: string;
+    symbol: string;
+    startedAt: string;
+    logs: AgentLog[];
+}
+
 export function fetchAgentLogs(status?: string, limit?: number) {
     const params = new URLSearchParams();
     if (status) params.set('status', status);
     if (limit) params.set('limit', String(limit));
     return fetchApi<AgentLog[]>(`/api/agents?${params}`, undefined, { includeAuth: true });
+}
+
+export function fetchAgentLogGroups(limit?: number) {
+    const params = new URLSearchParams({ groupByRun: 'true' });
+    if (limit) params.set('limit', String(limit));
+    return fetchApi<AgentLogRunGroup[]>(`/api/agents?${params}`, undefined, { includeAuth: true });
 }
 
 export function runAgent(agent: string, symbol: string, forecastDays = 30) {

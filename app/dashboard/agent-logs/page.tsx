@@ -1,44 +1,44 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Activity, CheckCircle, XCircle, Clock, Loader, RefreshCw } from 'lucide-react';
-import { fetchAgentLogs, AgentLog } from '@/lib/api';
+import { fetchAgentLogGroups, AgentLog, AgentLogRunGroup } from '@/lib/api';
 import { useSnackbar } from '@/components/SnackbarProvider';
 
 export default function AgentLogsPage() {
     const { showSnackbar } = useSnackbar();
-    const [logs, setLogs] = useState<AgentLog[]>([]);
+    const [runGroups, setRunGroups] = useState<AgentLogRunGroup[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
 
-    const loadLogs = async () => {
+    const loadLogs = useCallback(async () => {
         setLoading(true);
         setLoadError(null);
-        const res = await fetchAgentLogs(undefined, 50);
+        const res = await fetchAgentLogGroups(80);
         if (res.success && res.data) {
-            setLogs(res.data);
+            setRunGroups(res.data);
         } else {
             const message = res.error || 'Failed to load your agent logs.';
             setLoadError(message);
             showSnackbar({ variant: 'error', message });
         }
         setLoading(false);
-    };
+    }, [showSnackbar]);
 
     useEffect(() => {
         loadLogs();
-    }, []);
+    }, [loadLogs]);
 
     const getStatusIcon = (status: string) => {
         switch (status) {
             case 'completed':
-                return <CheckCircle className="w-5 h-5 text-green-400" />;
+                return <CheckCircle className="h-5 w-5 text-green-400" />;
             case 'failed':
-                return <XCircle className="w-5 h-5 text-red-400" />;
+                return <XCircle className="h-5 w-5 text-red-400" />;
             case 'running':
-                return <Activity className="w-5 h-5 text-primary animate-pulse" />;
+                return <Activity className="h-5 w-5 animate-pulse text-primary" />;
             default:
-                return <Clock className="w-5 h-5 text-gray-400" />;
+                return <Clock className="h-5 w-5 text-gray-400" />;
         }
     };
 
@@ -55,27 +55,38 @@ export default function AgentLogsPage() {
         }
     };
 
-    // Compute stats from real data
-    const totalExecs = logs.length;
-    const completedCount = logs.filter(l => l.status === 'completed').length;
-    const failedCount = logs.filter(l => l.status === 'failed').length;
-    const runningCount = logs.filter(l => l.status === 'running').length;
-    const successRate = totalExecs > 0 ? ((completedCount / (completedCount + failedCount)) * 100).toFixed(1) : '—';
-    const avgDuration = logs.filter(l => l.duration).length > 0
-        ? (logs.filter(l => l.duration).reduce((sum, l) => sum + (l.duration || 0), 0) / logs.filter(l => l.duration).length / 1000).toFixed(1)
-        : '—';
+    const getLogMeta = (log: AgentLog) => {
+        const input = (log.input || {}) as Record<string, unknown>;
+        return {
+            runId: typeof input.runId === 'string' ? input.runId : log.id,
+            stageOrder: typeof input.stageOrder === 'number' ? input.stageOrder : 999,
+            mode: typeof input.mode === 'string' ? input.mode : 'single',
+            symbol: typeof input.symbol === 'string' ? input.symbol : '',
+        };
+    };
 
-    // Compute per-agent performance
+    const logs = runGroups.flatMap((group) => group.logs);
+    const totalExecs = logs.length;
+    const completedCount = logs.filter((log) => log.status === 'completed').length;
+    const failedCount = logs.filter((log) => log.status === 'failed').length;
+    const runningCount = logs.filter((log) => log.status === 'running').length;
+    const finishedCount = completedCount + failedCount;
+    const successRate = finishedCount > 0 ? ((completedCount / finishedCount) * 100).toFixed(1) : '-';
+    const durationLogs = logs.filter((log) => log.duration);
+    const avgDuration = durationLogs.length > 0
+        ? (durationLogs.reduce((sum, log) => sum + (log.duration || 0), 0) / durationLogs.length / 1000).toFixed(1)
+        : '-';
+
     const agentPerf = logs.reduce<Record<string, { executions: number; completed: number; failed: number; totalDuration: number; durationCount: number }>>((acc, log) => {
         if (!acc[log.agentName]) {
             acc[log.agentName] = { executions: 0, completed: 0, failed: 0, totalDuration: 0, durationCount: 0 };
         }
-        acc[log.agentName].executions++;
-        if (log.status === 'completed') acc[log.agentName].completed++;
-        if (log.status === 'failed') acc[log.agentName].failed++;
+        acc[log.agentName].executions += 1;
+        if (log.status === 'completed') acc[log.agentName].completed += 1;
+        if (log.status === 'failed') acc[log.agentName].failed += 1;
         if (log.duration) {
             acc[log.agentName].totalDuration += log.duration;
-            acc[log.agentName].durationCount++;
+            acc[log.agentName].durationCount += 1;
         }
         return acc;
     }, {});
@@ -83,90 +94,94 @@ export default function AgentLogsPage() {
     const agentPerfList = Object.entries(agentPerf).map(([name, stats]) => ({
         name,
         executions: stats.executions,
-        success: stats.executions > 0 ? ((stats.completed / (stats.completed + stats.failed)) * 100).toFixed(1) : '—',
-        avgTime: stats.durationCount > 0 ? (stats.totalDuration / stats.durationCount / 1000).toFixed(1) : '—',
+        success: stats.completed + stats.failed > 0 ? ((stats.completed / (stats.completed + stats.failed)) * 100).toFixed(1) : '-',
+        avgTime: stats.durationCount > 0 ? (stats.totalDuration / stats.durationCount / 1000).toFixed(1) : '-',
     }));
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold mb-2">Agent Logs</h1>
+                    <h1 className="mb-2 text-3xl font-bold">Agent Logs</h1>
                     <p className="text-gray-400">Monitor AI agent execution and performance</p>
                 </div>
                 <button onClick={loadLogs} disabled={loading} className="btn-secondary flex items-center">
-                    <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                     Refresh
                 </button>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
                 <div className="card">
-                    <div className="text-sm text-gray-400 mb-1">Total Executions</div>
+                    <div className="mb-1 text-sm text-gray-400">Total Executions</div>
                     <div className="text-2xl font-bold">{totalExecs.toLocaleString()}</div>
                 </div>
                 <div className="card">
-                    <div className="text-sm text-gray-400 mb-1">Success Rate</div>
+                    <div className="mb-1 text-sm text-gray-400">Success Rate</div>
                     <div className="text-2xl font-bold text-green-400">{successRate}%</div>
                 </div>
                 <div className="card">
-                    <div className="text-sm text-gray-400 mb-1">Avg Duration</div>
+                    <div className="mb-1 text-sm text-gray-400">Avg Duration</div>
                     <div className="text-2xl font-bold">{avgDuration}s</div>
                 </div>
                 <div className="card">
-                    <div className="text-sm text-gray-400 mb-1">Active Now</div>
+                    <div className="mb-1 text-sm text-gray-400">Active Now</div>
                     <div className="text-2xl font-bold text-primary">{runningCount}</div>
                 </div>
             </div>
 
-            {/* Logs Table */}
             <div className="card">
-                <h2 className="text-xl font-bold mb-4">Recent Executions</h2>
+                <h2 className="mb-4 text-xl font-bold">Recent Executions</h2>
                 {loading ? (
                     <div className="flex items-center justify-center py-12">
-                        <Loader className="w-8 h-8 animate-spin text-primary" />
+                        <Loader className="h-8 w-8 animate-spin text-primary" />
                     </div>
                 ) : logs.length === 0 ? (
-                    <div className="text-center py-8">
-                        <p className="text-gray-300 font-medium">No agent logs yet.</p>
-                        <p className="text-gray-500 text-sm mt-2">
-                            Run a prediction or stock analysis preview to see your personal agent activity here.
-                        </p>
-                        {loadError && <p className="text-red-400 text-sm mt-3">{loadError}</p>}
+                    <div className="py-8 text-center">
+                        <p className="font-medium text-gray-300">No agent logs yet.</p>
+                        <p className="mt-2 text-sm text-gray-500">Run a prediction or stock analysis preview to see your personal agent activity here.</p>
+                        {loadError && <p className="mt-3 text-sm text-red-400">{loadError}</p>}
                     </div>
                 ) : (
-                    <div className="space-y-3">
-                        {logs.map((log) => (
-                            <div
-                                key={log.id}
-                                className="p-4 bg-dark-200 rounded-lg hover:bg-dark-300 transition-colors"
-                            >
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-start space-x-3 flex-1">
-                                        {getStatusIcon(log.status)}
-                                        <div className="flex-1">
-                                            <div className="flex items-center space-x-3 mb-2">
-                                                <h3 className="font-bold">{log.agentName}</h3>
-                                                <span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(log.status)}`}>
-                                                    {log.status}
+                    <div className="space-y-4">
+                        {runGroups.map((group) => (
+                            <div key={group.runId} className="rounded-lg bg-dark-200 p-4">
+                                <div className="mb-3 flex items-start justify-between gap-3">
+                                    <div>
+                                        <div className="flex items-center gap-3">
+                                            <h3 className="font-bold">
+                                                {group.mode === 'full_prediction' ? 'Full Prediction Run' : group.mode === 'preview' ? 'Preview Run' : 'Agent Run'}
+                                            </h3>
+                                            {group.symbol && <span className="rounded bg-primary/15 px-2 py-1 text-xs font-semibold text-primary">{group.symbol}</span>}
+                                        </div>
+                                        <p className="mt-1 text-sm text-gray-400">Started: {new Date(group.startedAt).toLocaleString()}</p>
+                                    </div>
+                                    <span className="text-xs text-gray-500">Run {group.runId.slice(0, 8)}</span>
+                                </div>
+                                <div className="space-y-2">
+                                    {group.logs
+                                        .slice()
+                                        .sort((a, b) => getLogMeta(a).stageOrder - getLogMeta(b).stageOrder)
+                                        .map((log) => (
+                                            <div key={log.id} className="flex items-start justify-between gap-3 rounded-lg border border-slate-700/70 bg-slate-900/40 px-3 py-3">
+                                                <div className="flex items-start space-x-3">
+                                                    {getStatusIcon(log.status)}
+                                                    <div>
+                                                        <div className="flex items-center space-x-3">
+                                                            <span className="font-semibold">{log.agentName}</span>
+                                                            <span className={`rounded px-2 py-1 text-xs font-semibold ${getStatusColor(log.status)}`}>{log.status}</span>
+                                                        </div>
+                                                        <div className="mt-1 text-sm text-gray-400">
+                                                            {log.duration && <span>Duration: {(log.duration / 1000).toFixed(2)}s</span>}
+                                                            {log.error && <div className="text-red-400">Error: {log.error}</div>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <span className="text-xs text-gray-500">
+                                                    Step {getLogMeta(log).stageOrder === 999 ? 'single' : getLogMeta(log).stageOrder}
                                                 </span>
                                             </div>
-                                            <div className="text-sm text-gray-400 space-y-1">
-                                                <div>Started: {new Date(log.startedAt).toLocaleString()}</div>
-                                                {log.duration && (
-                                                    <div>Duration: {(log.duration / 1000).toFixed(2)}s</div>
-                                                )}
-                                                {log.error && (
-                                                    <div className="text-red-400">Error: {log.error}</div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button className="btn-secondary text-sm px-3 py-1">
-                                        View Details
-                                    </button>
+                                        ))}
                                 </div>
                             </div>
                         ))}
@@ -174,27 +189,17 @@ export default function AgentLogsPage() {
                 )}
             </div>
 
-            {/* Agent Performance */}
             {agentPerfList.length > 0 && (
                 <div className="card">
-                    <h2 className="text-xl font-bold mb-4">Agent Performance</h2>
+                    <h2 className="mb-4 text-xl font-bold">Agent Performance</h2>
                     <div className="space-y-4">
-                        {agentPerfList.map((agent, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-3 bg-dark-200 rounded-lg">
+                        {agentPerfList.map((agent) => (
+                            <div key={agent.name} className="flex items-center justify-between rounded-lg bg-dark-200 p-3">
                                 <div className="font-semibold">{agent.name}</div>
                                 <div className="flex items-center space-x-6 text-sm">
-                                    <div>
-                                        <span className="text-gray-400">Executions: </span>
-                                        <span className="font-semibold">{agent.executions}</span>
-                                    </div>
-                                    <div>
-                                        <span className="text-gray-400">Success: </span>
-                                        <span className="font-semibold text-green-400">{agent.success}%</span>
-                                    </div>
-                                    <div>
-                                        <span className="text-gray-400">Avg Time: </span>
-                                        <span className="font-semibold">{agent.avgTime}s</span>
-                                    </div>
+                                    <div><span className="text-gray-400">Executions: </span><span className="font-semibold">{agent.executions}</span></div>
+                                    <div><span className="text-gray-400">Success: </span><span className="font-semibold text-green-400">{agent.success}%</span></div>
+                                    <div><span className="text-gray-400">Avg Time: </span><span className="font-semibold">{agent.avgTime}s</span></div>
                                 </div>
                             </div>
                         ))}
