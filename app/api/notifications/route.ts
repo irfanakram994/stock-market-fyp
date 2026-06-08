@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
+import { requireModuleEnabled } from '@/lib/moduleGuard';
 import {
   countUnreadUserNotifications,
   listUserNotifications,
@@ -29,6 +30,8 @@ export async function GET(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
+    const disabled = await requireModuleEnabled('user_panel');
+    if (disabled) return disabled;
 
     const limit = Number(request.nextUrl.searchParams.get('limit') || '10');
     const notifications = await listUserNotifications(user.id, limit);
@@ -53,6 +56,8 @@ export async function PATCH(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
+    const disabled = await requireModuleEnabled('user_panel');
+    if (disabled) return disabled;
 
     const body = await request.json();
     const notificationIds = Array.isArray(body?.notificationIds) ? body.notificationIds.map(String) : undefined;

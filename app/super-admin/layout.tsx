@@ -1,18 +1,11 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
 import { SuperAdminAuthProvider } from '@/lib/superAdminAuthContext';
 import { SuperAdminProtectedRoute } from '@/components/SuperAdmin/SuperAdminProtectedRoute';
 import SuperAdminSidebar from '@/components/SuperAdmin/SuperAdminSidebar';
 import SuperAdminNavbar from '@/components/SuperAdmin/SuperAdminNavbar';
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-
-  if (pathname === '/super-admin/login') {
-    return <>{children}</>;
-  }
-
   return (
     <SuperAdminAuthProvider>
       <SuperAdminProtectedRoute>

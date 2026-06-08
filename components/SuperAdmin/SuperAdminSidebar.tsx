@@ -42,7 +42,7 @@ export default function SuperAdminSidebar() {
 
   const handleSignOut = async () => {
     await signOut();
-    router.push('/super-admin/login');
+    router.push('/');
   };
 
   return (

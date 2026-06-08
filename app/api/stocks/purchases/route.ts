@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { supabaseServer } from '@/lib/supabaseClient';
+import { requireModuleEnabled } from '@/lib/moduleGuard';
 
 interface StockPurchaseRow {
     id: string;
@@ -37,6 +38,8 @@ export async function GET(request: NextRequest) {
                 { status: 401 }
             );
         }
+        const disabled = await requireModuleEnabled('user_panel');
+        if (disabled) return disabled;
 
         const rows = await prisma.$queryRaw<StockPurchaseRow[]>`
             SELECT
@@ -81,6 +84,8 @@ export async function POST(request: NextRequest) {
                 { status: 401 }
             );
         }
+        const disabled = await requireModuleEnabled('user_panel');
+        if (disabled) return disabled;
 
         const body = await request.json();
         const stockName = String(body?.stockName ?? '').trim();
@@ -151,6 +156,8 @@ export async function DELETE(request: NextRequest) {
                 { status: 401 }
             );
         }
+        const disabled = await requireModuleEnabled('user_panel');
+        if (disabled) return disabled;
 
         const id = request.nextUrl.searchParams.get('id');
         if (!id || !/^\d+$/.test(id)) {

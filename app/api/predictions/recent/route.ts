@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/userAuth";
+import { requireModuleEnabled } from "@/lib/moduleGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,8 @@ export async function GET(request: NextRequest) {
         { status: 401 },
       );
     }
+    const disabled = await requireModuleEnabled("forecasting_module");
+    if (disabled) return disabled;
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "10");

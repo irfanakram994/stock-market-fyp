@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
+import { requireModuleEnabled } from '@/lib/moduleGuard';
+import { requireUser } from '@/lib/userAuth';
 
 interface CachedNews {
     expiresAt: number;
@@ -23,6 +25,13 @@ const newsCache = new Map<string, CachedNews>();
  */
 export async function GET(request: NextRequest) {
     try {
+        const user = await requireUser(request);
+        if (!user) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+        const disabled = await requireModuleEnabled('multi_agent_system');
+        if (disabled) return disabled;
+
         const { searchParams } = new URL(request.url);
         const symbol = searchParams.get('symbol')?.trim().toUpperCase();
 

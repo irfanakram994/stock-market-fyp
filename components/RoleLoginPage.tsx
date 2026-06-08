@@ -6,6 +6,7 @@ import { Eye, EyeOff, Lock, Mail, ShieldCheck, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { resolveCurrentRole, type ResolvedRole } from "@/lib/roleRouting";
 import { useSnackbar } from "@/components/SnackbarProvider";
+import { usePostLoginTransition } from "@/components/PostLoginTransition";
 
 type RoleLoginConfig = {
   expectedRole: Extract<ResolvedRole, "admin" | "super_admin">;
@@ -15,6 +16,16 @@ type RoleLoginConfig = {
   accentClass: string;
   buttonClass: string;
 };
+
+function getFallbackDisplayName(email?: string | null) {
+  if (!email) return undefined;
+  const [localPart] = email.split("@");
+  if (!localPart) return undefined;
+  return localPart
+    .replace(/[._-]+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
 function clearBrowserAuthState() {
   if (typeof window === "undefined") return;
@@ -53,6 +64,7 @@ export default function RoleLoginPage({
 }: RoleLoginConfig) {
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
+  const { startTransition } = usePostLoginTransition();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -120,7 +132,12 @@ export default function RoleLoginPage({
         return;
       }
 
-      showSnackbar({ variant: "success", message: `${title} login successful.` });
+      router.prefetch(targetPath);
+      startTransition({
+        role: expectedRole,
+        destination: targetPath,
+        displayName: roleResult.account?.name || getFallbackDisplayName(roleResult.account?.email || email),
+      });
       router.replace(targetPath);
       router.refresh();
     } catch (err) {

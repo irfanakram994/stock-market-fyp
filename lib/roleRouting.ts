@@ -6,6 +6,12 @@ export interface RoleResolution {
   success: boolean;
   role?: ResolvedRole;
   redirectTo?: string;
+  account?: {
+    id?: string;
+    email?: string | null;
+    name?: string | null;
+    role?: string | null;
+  };
   error?: string;
   code?: string;
 }
@@ -48,6 +54,7 @@ export async function resolveCurrentRole(accessTokenOverride?: string): Promise<
         success: true,
         role: result.role,
         redirectTo: result.redirectTo,
+        account: result.account,
       };
     } catch (err) {
       // Network or runtime failure during fetch

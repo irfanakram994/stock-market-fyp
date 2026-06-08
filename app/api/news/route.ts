@@ -2,10 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 import { prisma } from '@/lib/prisma';
 import { requireUser } from '@/lib/userAuth';
+import { requireModuleEnabled } from '@/lib/moduleGuard';
 
 // GET /api/news - Fetch news with sentiment
 export async function GET(request: NextRequest) {
     try {
+        const user = await requireUser(request);
+        if (!user) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+        const disabled = await requireModuleEnabled('user_panel');
+        if (disabled) return disabled;
+
         const { searchParams } = new URL(request.url);
         const symbol = searchParams.get('symbol');
         const limit = parseInt(searchParams.get('limit') || '20');
@@ -13,14 +24,6 @@ export async function GET(request: NextRequest) {
         let where: Record<string, unknown> = symbol ? { stock: { symbol } } : {};
 
         if (!symbol) {
-            const user = await requireUser(request);
-            if (!user) {
-                return NextResponse.json(
-                    { success: false, error: 'Unauthorized' },
-                    { status: 401 }
-                );
-            }
-
             const userStocks = await prisma.prediction.findMany({
                 where: { userId: user.id },
                 distinct: ['stockId'],

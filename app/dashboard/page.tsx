@@ -6,6 +6,7 @@ import MetricCard from '@/components/Cards/MetricCard';
 import StockSymbolCombobox from '@/components/StockSymbolCombobox';
 import { createStockPurchase, deleteStockPurchase, fetchDashboardSummary, fetchMarketData, fetchPredictions, fetchStockPurchases, Prediction, Stock, AgentLog, StockPurchase } from '@/lib/api';
 import { getLastSelectedStockSymbol } from '@/lib/stockCatalog';
+import { usePostLoginTransition } from '@/components/PostLoginTransition';
 
 const getTodayDate = () => new Date().toISOString().split('T')[0];
 
@@ -67,6 +68,7 @@ function calcAccuracy(predictedPrice: number, currentPrice: number) {
 }
 
 export default function DashboardPage() {
+    const { markDestinationReady } = usePostLoginTransition();
     const [predictions, setPredictions] = useState<Prediction[]>([]);
     const [stocks, setStocks] = useState<Stock[]>([]);
     const [agentLogs, setAgentLogs] = useState<AgentLog[]>([]);
@@ -102,6 +104,12 @@ export default function DashboardPage() {
         }
         loadData();
     }, []);
+
+    useEffect(() => {
+        if (!loading) {
+            markDestinationReady('/dashboard');
+        }
+    }, [loading, markDestinationReady]);
 
     // Compute metrics from real data
     const activeStocks = stocks.length;

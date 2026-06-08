@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 import { runAgentSync } from '@/lib/agentRunner';
 import { requireModuleEnabled } from '@/lib/moduleGuard';
+import { requireUser } from '@/lib/userAuth';
 
 interface MarketCandle {
     date: string;
@@ -246,6 +247,10 @@ function buildAnalysis(candles: MarketCandle[], info: Record<string, unknown> = 
  */
 export async function GET(request: NextRequest) {
     try {
+        const user = await requireUser(request);
+        if (!user) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
         const disabled = await requireModuleEnabled('multi_agent_system');
         if (disabled) return disabled;
 

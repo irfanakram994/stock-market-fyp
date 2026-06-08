@@ -5,6 +5,7 @@ import { Crown, Users, UserCog, TrendingUp, Activity, ShieldCheck, Bell, Refresh
 import { superAdminFetch } from '@/lib/superAdminApi';
 import { useSnackbar } from '@/components/SnackbarProvider';
 import { AdminMetricCard, AdminPageHeader, LoadingState, Panel } from '@/components/Admin/AdminUI';
+import { usePostLoginTransition } from '@/components/PostLoginTransition';
 
 interface DashboardData {
   metrics: {
@@ -26,6 +27,7 @@ interface DashboardData {
 
 export default function SuperAdminDashboardPage() {
   const { showSnackbar } = useSnackbar();
+  const { markDestinationReady } = usePostLoginTransition();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -52,6 +54,12 @@ export default function SuperAdminDashboardPage() {
   useEffect(() => {
     load().finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      markDestinationReady('/super-admin');
+    }
+  }, [loading, markDestinationReady]);
 
   if (loading) {
     return <LoadingState label="Loading super admin dashboard..." />;

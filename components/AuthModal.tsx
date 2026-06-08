@@ -6,6 +6,7 @@ import { X, Mail, Lock, User, Facebook, Linkedin, Loader, Eye, EyeOff } from 'lu
 import { supabase } from '@/lib/supabaseClient';
 import { resolveCurrentRole } from '@/lib/roleRouting';
 import { useSnackbar } from '@/components/SnackbarProvider';
+import { usePostLoginTransition } from '@/components/PostLoginTransition';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -13,9 +14,20 @@ interface AuthModalProps {
     onSuccess: () => void;
 }
 
+function getFallbackDisplayName(email?: string | null) {
+    if (!email) return undefined;
+    const [localPart] = email.split('@');
+    if (!localPart) return undefined;
+    return localPart
+        .replace(/[._-]+/g, ' ')
+        .trim()
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     const router = useRouter();
     const { showSnackbar } = useSnackbar();
+    const { startTransition } = usePostLoginTransition();
     const [isSignIn, setIsSignIn] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -44,6 +56,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
         try {
             let signedInAccessToken: string | undefined;
+            let signedInDisplayName: string | undefined;
             if (isSignIn) {
                 // Sign in using client-side Supabase auth
                 const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -73,6 +86,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 }
 
                 signedInAccessToken = data.session.access_token;
+                signedInDisplayName =
+                    data.user.user_metadata?.name || getFallbackDisplayName(data.user.email);
                 setAuthCookie();
             } else {
                 if (formData.password !== formData.confirmPassword) {
@@ -120,8 +135,16 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             if (roleResult.success && roleResult.redirectTo) {
                 // Reset form only after role resolution succeeds.
                 setFormData({ email: '', password: '', name: '', confirmPassword: '' });
+                router.prefetch(roleResult.redirectTo);
+                startTransition({
+                    role: roleResult.role || 'user',
+                    destination: roleResult.redirectTo,
+                    displayName:
+                        roleResult.account?.name ||
+                        signedInDisplayName ||
+                        getFallbackDisplayName(roleResult.account?.email),
+                });
                 onSuccess();
-                showSnackbar({ variant: 'success', message: 'Signed in successfully.' });
                 router.push(roleResult.redirectTo);
             } else {
                 await supabase.auth.signOut({ scope: 'global' });

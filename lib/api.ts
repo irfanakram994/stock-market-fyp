@@ -253,7 +253,11 @@ export function fetchNews(symbol?: string, limit?: number) {
 
 /** Fetch live news from News API via Python agent (no DB) */
 export function fetchNewsLive(symbol: string) {
-    return fetchApi<NewsItem[]>(`/api/news-live?symbol=${encodeURIComponent(symbol)}`);
+    return fetchApi<NewsItem[]>(
+        `/api/news-live?symbol=${encodeURIComponent(symbol)}`,
+        undefined,
+        { includeAuth: true }
+    );
 }
 
 export interface MarketCandle {
@@ -339,7 +343,9 @@ export interface MarketData {
 /** Fetch live market data from yfinance via Python agent (no DB) */
 export function fetchMarketData(symbol: string) {
     return fetchApi<MarketData>(
-        `/api/market?symbol=${encodeURIComponent(symbol)}`
+        `/api/market?symbol=${encodeURIComponent(symbol)}`,
+        undefined,
+        { includeAuth: true }
     );
 }
 

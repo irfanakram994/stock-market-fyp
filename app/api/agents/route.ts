@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 import { prisma } from '@/lib/prisma';
 import { requireUser } from '@/lib/userAuth';
+import { requireModuleEnabled } from '@/lib/moduleGuard';
 
 // GET /api/agents - List agent logs
 export async function GET(request: NextRequest) {
@@ -13,6 +14,8 @@ export async function GET(request: NextRequest) {
                 { status: 401 }
             );
         }
+        const disabled = await requireModuleEnabled('multi_agent_system');
+        if (disabled) return disabled;
 
         const { searchParams } = new URL(request.url);
         const status = searchParams.get('status');

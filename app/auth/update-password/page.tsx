@@ -12,7 +12,7 @@ type Role = 'user' | 'admin' | 'super-admin';
 
 function getLoginPath(role: string): string {
   if (role === 'admin') return '/';
-  if (role === 'super-admin') return '/super-admin/login';
+  if (role === 'super-admin') return '/';
   return '/';
 }
 

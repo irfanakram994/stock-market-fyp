@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireModuleEnabled } from "@/lib/moduleGuard";
+import { requireUser } from "@/lib/userAuth";
 
 type ChatRole = "system" | "user" | "assistant";
 
@@ -265,6 +267,17 @@ function getTradeFluxAnswer(text: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireUser(request);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    const disabled = await requireModuleEnabled("chatbot_module");
+    if (disabled) return disabled;
+
     const body = await request.json();
     const messages = Array.isArray(body?.messages) ? body.messages : [];
 

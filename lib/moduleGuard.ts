@@ -7,6 +7,7 @@ const MODULE_LABELS: Record<string, string> = {
   forecasting_module: 'Forecasting Module',
   multi_agent_system: 'Multi-Agent System',
   analytics_module: 'Analytics Module',
+  chatbot_module: 'Chatbot',
 };
 
 export async function requireModuleEnabled(moduleKey: string) {

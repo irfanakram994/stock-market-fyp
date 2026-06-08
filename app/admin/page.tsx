@@ -15,6 +15,7 @@ import { useAdminAuth } from '@/lib/adminAuthContext';
 import { adminFetch } from '@/lib/adminApi';
 import { useSnackbar } from '@/components/SnackbarProvider';
 import { AdminPageHeader, LoadingState } from '@/components/Admin/AdminUI';
+import { usePostLoginTransition } from '@/components/PostLoginTransition';
 
 interface DashboardStats {
     users: {
@@ -120,6 +121,7 @@ function StatCard({
 export default function AdminDashboardPage() {
     const { admin } = useAdminAuth();
     const { showSnackbar } = useSnackbar();
+    const { markDestinationReady } = usePostLoginTransition();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -147,6 +149,12 @@ export default function AdminDashboardPage() {
         };
         loadData();
     }, [admin?.email]);
+
+    useEffect(() => {
+        if (!loading) {
+            markDestinationReady('/admin');
+        }
+    }, [loading, markDestinationReady]);
 
     const handleRefresh = async () => {
         setRefreshing(true);
