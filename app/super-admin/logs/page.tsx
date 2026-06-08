@@ -49,7 +49,7 @@ function StatusBadge({ value }: { value: string }) {
       ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-400/20'
       : normalized === 'failed' || normalized.includes('delete')
         ? 'bg-red-500/10 text-red-300 ring-red-400/20'
-        : 'bg-cyan-500/10 text-cyan-300 ring-cyan-400/20';
+        : 'bg-cyan-500/10 text-fuchsia-300 ring-fuchsia-300/25';
 
   return <span className={`rounded px-2 py-1 text-xs font-semibold ring-1 ${className}`}>{value}</span>;
 }
@@ -105,9 +105,10 @@ export default function SuperAdminLogsPage() {
     <div className="space-y-6">
       <AdminPageHeader
         icon={FileText}
+        tone="super"
         title="System Logs"
         description="Review agent execution, admin actions, and super-admin audit events from one place."
-        actions={<RefreshButton onClick={() => load(true)} loading={refreshing} />}
+        actions={<RefreshButton tone="super" onClick={() => load(true)} loading={refreshing} />}
       />
 
       <Panel className="p-2">
@@ -120,7 +121,7 @@ export default function SuperAdminLogsPage() {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors ${
-                  selected ? 'bg-cyan-500/15 text-cyan-200 ring-1 ring-cyan-400/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  selected ? 'bg-cyan-500/15 text-fuchsia-200 ring-1 ring-fuchsia-300/25' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -132,7 +133,7 @@ export default function SuperAdminLogsPage() {
       </Panel>
 
       {loading ? (
-        <LoadingState label="Loading system logs..." />
+        <LoadingState label="Loading system logs..." tone="super" />
       ) : !payload || currentRows.length === 0 ? (
         <EmptyState title="No logs found" description="System actions will appear here after agents or admins perform work." />
       ) : (
@@ -186,7 +187,7 @@ export default function SuperAdminLogsPage() {
       )}
 
       {refreshing && (
-        <div className="fixed bottom-24 right-6 inline-flex items-center gap-2 rounded-lg border border-cyan-400/20 bg-slate-950 px-3 py-2 text-sm text-cyan-200 shadow-xl">
+        <div className="fixed bottom-24 right-6 inline-flex items-center gap-2 rounded-lg border border-fuchsia-300/25 bg-slate-950 px-3 py-2 text-sm text-fuchsia-200 shadow-xl">
           <Loader className="h-4 w-4 animate-spin" />
           Refreshing logs
         </div>

@@ -77,10 +77,10 @@ function StatCard({
     color: string;
 }) {
     const colorClasses: Record<string, string> = {
-        blue: 'from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-400',
-        green: 'from-green-500/20 to-emerald-500/20 border-green-500/30 text-green-400',
-        purple: 'from-purple-500/20 to-indigo-500/20 border-purple-500/30 text-purple-400',
-        orange: 'from-orange-500/20 to-red-500/20 border-orange-500/30 text-orange-400',
+        blue: 'from-teal-400/10 to-emerald-400/10 border-teal-300/25 text-teal-300',
+        green: 'from-emerald-400/10 to-teal-400/10 border-emerald-300/25 text-emerald-300',
+        purple: 'from-lime-300/10 to-emerald-400/10 border-lime-300/25 text-lime-200',
+        mint: 'from-emerald-400/10 to-teal-400/10 border-emerald-300/25 text-emerald-300',
     };
 
     return (
@@ -163,7 +163,7 @@ export default function AnalyticsPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <Loader className="w-8 h-8 animate-spin text-orange-500" />
+                <Loader className="w-8 h-8 animate-spin text-emerald-300" />
             </div>
         );
     }
@@ -174,7 +174,7 @@ export default function AnalyticsPage() {
                 <p className="text-gray-400">Failed to load analytics</p>
                 <button
                     onClick={handleRefresh}
-                    className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                    className="mt-4 px-4 py-2 bg-emerald-400 text-slate-950 rounded-lg hover:bg-emerald-300"
                 >
                     Retry
                 </button>
@@ -265,7 +265,7 @@ export default function AnalyticsPage() {
                     title="Avg Sharpe Ratio"
                     value={analytics.backtestAnalytics.avgSharpeRatio || 'N/A'}
                     icon={PieChart}
-                    color="orange"
+                    color="mint"
                 />
             </div>
 
@@ -302,7 +302,7 @@ export default function AnalyticsPage() {
                 {/* Confidence Distribution */}
                 <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6">
                     <h3 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-                        <BarChart3 className="w-5 h-5 text-blue-400" />
+                        <BarChart3 className="w-5 h-5 text-emerald-300" />
                         <span>Confidence Distribution</span>
                     </h3>
                     <div className="space-y-4">
@@ -316,13 +316,13 @@ export default function AnalyticsPage() {
                             label="High (50-75%)"
                             value={analytics.predictionAnalytics.confidenceDistribution.high}
                             total={totalConfidence}
-                            color="bg-blue-500"
+                            color="bg-teal-400"
                         />
                         <DistributionBar
                             label="Medium (25-50%)"
                             value={analytics.predictionAnalytics.confidenceDistribution.medium}
                             total={totalConfidence}
-                            color="bg-yellow-500"
+                            color="bg-lime-300"
                         />
                         <DistributionBar
                             label="Low (0-25%)"
@@ -336,7 +336,7 @@ export default function AnalyticsPage() {
                 {/* Agent Type Distribution */}
                 <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6">
                     <h3 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-                        <Activity className="w-5 h-5 text-purple-400" />
+                        <Activity className="w-5 h-5 text-emerald-300" />
                         <span>Agent Type Distribution</span>
                     </h3>
                     <div className="space-y-4">
@@ -354,12 +354,12 @@ export default function AnalyticsPage() {
                                         total={totalAgentTypes}
                                         color={
                                             [
-                                                'bg-purple-500',
-                                                'bg-blue-500',
-                                                'bg-cyan-500',
+                                                'bg-emerald-400',
+                                                'bg-teal-400',
+                                                'bg-emerald-300',
                                                 'bg-green-500',
-                                                'bg-yellow-500',
-                                                'bg-orange-500',
+                                                'bg-lime-300',
+                                                'bg-emerald-400',
                                             ][index % 6]
                                         }
                                     />
@@ -371,7 +371,7 @@ export default function AnalyticsPage() {
                 {/* Stock Sector Distribution */}
                 <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6">
                     <h3 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-                        <PieChart className="w-5 h-5 text-orange-400" />
+                        <PieChart className="w-5 h-5 text-emerald-300" />
                         <span>Stock Sector Distribution</span>
                     </h3>
                     <div className="space-y-4">
@@ -390,12 +390,12 @@ export default function AnalyticsPage() {
                                         total={totalSectors}
                                         color={
                                             [
-                                                'bg-orange-500',
+                                                'bg-emerald-400',
                                                 'bg-red-500',
                                                 'bg-pink-500',
-                                                'bg-purple-500',
+                                                'bg-emerald-400',
                                                 'bg-indigo-500',
-                                                'bg-blue-500',
+                                                'bg-teal-400',
                                             ][index % 6]
                                         }
                                     />
@@ -408,7 +408,7 @@ export default function AnalyticsPage() {
             {/* Daily Activity Summary */}
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-                    <Calendar className="w-5 h-5 text-cyan-400" />
+                    <Calendar className="w-5 h-5 text-emerald-300" />
                     <span>Agent Daily Performance</span>
                 </h3>
                 <div className="overflow-x-auto">
@@ -479,7 +479,7 @@ export default function AnalyticsPage() {
                                                             parseFloat(successRate) >= 80
                                                                 ? 'bg-green-500/20 text-green-400'
                                                                 : parseFloat(successRate) >= 50
-                                                                ? 'bg-yellow-500/20 text-yellow-400'
+                                                                ? 'bg-lime-300/10 text-lime-200'
                                                                 : 'bg-red-500/20 text-red-400'
                                                         }`}
                                                     >

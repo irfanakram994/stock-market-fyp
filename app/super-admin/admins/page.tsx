@@ -126,16 +126,17 @@ export default function SuperAdminAdminsPage() {
     <div className="space-y-6">
       <AdminPageHeader
         icon={ShieldCheck}
+        tone="super"
         title="Admin Account Management"
         description="Create, activate, deactivate, and remove admin accounts with full audit visibility."
       />
 
       <Panel className="p-5">
         <form onSubmit={createAdmin} className="grid grid-cols-1 gap-3 md:grid-cols-4">
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin email" type="email" className="h-11 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-cyan-400/60" required />
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="name" className="h-11 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-cyan-400/60" />
-          <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password required" type="password" minLength={8} className="h-11 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-cyan-400/60" required />
-          <button disabled={saving} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-cyan-600 px-4 font-semibold text-white transition-colors hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60">
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin email" type="email" className="h-11 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-fuchsia-300/60" required />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="name" className="h-11 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-fuchsia-300/60" />
+          <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password required" type="password" minLength={8} className="h-11 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-fuchsia-300/60" required />
+          <button disabled={saving} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-fuchsia-400 px-4 font-semibold text-slate-950 transition-colors hover:bg-fuchsia-300 disabled:cursor-not-allowed disabled:opacity-60">
             {saving ? <Loader className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
             Add Admin
           </button>
@@ -144,7 +145,7 @@ export default function SuperAdminAdminsPage() {
 
       <Panel className="overflow-hidden">
         {loading ? (
-          <LoadingState label="Loading admin accounts..." />
+          <LoadingState label="Loading admin accounts..." tone="super" />
         ) : admins.length === 0 ? (
           <EmptyState title="No admin accounts found" description="Create an admin account using the form above." />
         ) : (
@@ -167,7 +168,7 @@ export default function SuperAdminAdminsPage() {
                 <td className="px-4 py-3 uppercase">{admin.role}</td>
                 <td className="px-4 py-3">
                   <button onClick={() => toggleAdmin(admin.id, admin.isActive)} disabled={savingId === admin.id} className="disabled:cursor-not-allowed disabled:opacity-60">
-                    {savingId === admin.id ? <Loader className="w-4 h-4 animate-spin text-cyan-300" /> : <StatusPill active={admin.isActive} />}
+                    {savingId === admin.id ? <Loader className="w-4 h-4 animate-spin text-fuchsia-300" /> : <StatusPill active={admin.isActive} />}
                   </button>
                 </td>
                 <td className="px-4 py-3 text-gray-400">{admin.lastLogin ? new Date(admin.lastLogin).toLocaleString() : '-'}</td>

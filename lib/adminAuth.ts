@@ -9,6 +9,8 @@ export interface AdminAuthResponse {
     id: string;
     email: string;
     name: string | null;
+    gender: string | null;
+    profileImage: string | null;
     role: string;
   };
   error?: string;
@@ -99,6 +101,8 @@ export async function adminSignIn(email: string, password: string): Promise<Admi
         id: adminUser.id,
         email: adminUser.email,
         name: adminUser.name,
+        gender: adminUser.gender,
+        profileImage: adminUser.profileImage,
         role: adminUser.role,
       },
     };
@@ -200,6 +204,8 @@ export async function verifyAdminSession(
         id: adminUser.id,
         email: adminUser.email,
         name: adminUser.name,
+        gender: adminUser.gender,
+        profileImage: adminUser.profileImage,
         role: adminUser.role,
       },
     };

@@ -8,6 +8,8 @@ interface SuperAdminUser {
   id: string;
   email: string;
   name: string | null;
+  gender: string | null;
+  profileImage: string | null;
   role: string;
 }
 
@@ -16,6 +18,7 @@ interface SuperAdminAuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   refreshSuperAdmin: () => Promise<void>;
+  updateSuperAdminProfile: (profile: Partial<Pick<SuperAdminUser, 'name' | 'gender' | 'profileImage'>>) => void;
 }
 
 const SuperAdminAuthContext = createContext<SuperAdminAuthContextType | undefined>(undefined);
@@ -87,8 +90,12 @@ export function SuperAdminAuthProvider({ children }: { children: React.ReactNode
     }
   };
 
+  const updateSuperAdminProfile = (profile: Partial<Pick<SuperAdminUser, 'name' | 'gender' | 'profileImage'>>) => {
+    setSuperAdmin((current) => (current ? { ...current, ...profile } : current));
+  };
+
   return (
-    <SuperAdminAuthContext.Provider value={{ superAdmin, loading, signOut, refreshSuperAdmin }}>
+    <SuperAdminAuthContext.Provider value={{ superAdmin, loading, signOut, refreshSuperAdmin, updateSuperAdminProfile }}>
       {children}
     </SuperAdminAuthContext.Provider>
   );

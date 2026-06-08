@@ -9,6 +9,8 @@ export interface SuperAdminAuthResponse {
     id: string;
     email: string;
     name: string | null;
+    gender: string | null;
+    profileImage: string | null;
     role: string;
   };
   error?: string;
@@ -83,6 +85,8 @@ export async function superAdminSignIn(email: string, password: string): Promise
         id: superAdmin.id,
         email: superAdmin.email,
         name: superAdmin.name,
+        gender: superAdmin.gender,
+        profileImage: superAdmin.profileImage,
         role: superAdmin.role,
       },
     };
@@ -182,6 +186,8 @@ export async function verifySuperAdminSession(
         id: superAdmin.id,
         email: superAdmin.email,
         name: superAdmin.name,
+        gender: superAdmin.gender,
+        profileImage: superAdmin.profileImage,
         role: superAdmin.role,
       },
     };

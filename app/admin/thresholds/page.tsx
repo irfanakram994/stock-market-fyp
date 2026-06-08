@@ -42,9 +42,9 @@ export default function ThresholdsPage() {
     });
 
     const categories = [
-        { value: 'prediction', label: 'Prediction', color: 'blue' },
-        { value: 'performance', label: 'Performance', color: 'green' },
-        { value: 'alert', label: 'Alert', color: 'orange' },
+        { value: 'prediction', label: 'Prediction', color: 'emerald' },
+        { value: 'performance', label: 'Performance', color: 'teal' },
+        { value: 'alert', label: 'Alert', color: 'mint' },
     ];
 
     const fetchThresholds = async () => {
@@ -154,11 +154,11 @@ export default function ThresholdsPage() {
     const getCategoryColor = (category: string) => {
         switch (category) {
             case 'prediction':
-                return 'from-blue-500/20 to-cyan-500/20 border-blue-500/30';
+                return 'from-emerald-400/10 to-teal-400/10 border-emerald-300/25';
             case 'performance':
-                return 'from-green-500/20 to-emerald-500/20 border-green-500/30';
+                return 'from-teal-400/10 to-emerald-300/10 border-teal-300/25';
             case 'alert':
-                return 'from-orange-500/20 to-red-500/20 border-orange-500/30';
+                return 'from-lime-300/10 to-emerald-400/10 border-lime-300/25';
             default:
                 return 'from-gray-500/20 to-slate-500/20 border-gray-500/30';
         }
@@ -174,7 +174,7 @@ export default function ThresholdsPage() {
                 </div>
                 <button
                     onClick={openCreateModal}
-                    className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-red-600 transition-all"
+                    className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-semibold rounded-lg hover:from-emerald-300 hover:to-teal-300 transition-all"
                 >
                     <Plus className="w-5 h-5" />
                     <span>Add Threshold</span>
@@ -184,7 +184,7 @@ export default function ThresholdsPage() {
             {/* Content */}
             {loading ? (
                 <div className="flex items-center justify-center py-12">
-                    <Loader className="w-8 h-8 animate-spin text-orange-500" />
+                    <Loader className="w-8 h-8 animate-spin text-emerald-300" />
                 </div>
             ) : thresholds.length === 0 ? (
                 <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-12 text-center">
@@ -192,7 +192,7 @@ export default function ThresholdsPage() {
                     <p className="text-gray-400 mb-4">No thresholds configured yet</p>
                     <button
                         onClick={openCreateModal}
-                        className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                        className="px-4 py-2 bg-emerald-400 text-slate-950 rounded-lg hover:bg-emerald-300"
                     >
                         Create First Threshold
                     </button>
@@ -208,11 +208,11 @@ export default function ThresholdsPage() {
                                 <h2 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
                                     <span
                                         className={`w-3 h-3 rounded-full ${
-                                            cat.color === 'blue'
-                                                ? 'bg-blue-500'
-                                                : cat.color === 'green'
-                                                ? 'bg-green-500'
-                                                : 'bg-orange-500'
+                                            cat.color === 'emerald'
+                                                ? 'bg-emerald-300'
+                                                : cat.color === 'teal'
+                                                ? 'bg-teal-300'
+                                                : 'bg-lime-300'
                                         }`}
                                     ></span>
                                     <span>{cat.label} Thresholds</span>
@@ -320,7 +320,7 @@ export default function ThresholdsPage() {
                                     onChange={(e) =>
                                         setFormData({ ...formData, name: e.target.value })
                                     }
-                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
                                     required
                                     disabled={!!editingThreshold}
                                 />
@@ -333,7 +333,7 @@ export default function ThresholdsPage() {
                                     onChange={(e) =>
                                         setFormData({ ...formData, category: e.target.value })
                                     }
-                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
                                     disabled={!!editingThreshold}
                                 >
                                     {categories.map((cat) => (
@@ -356,7 +356,7 @@ export default function ThresholdsPage() {
                                             value: parseFloat(e.target.value),
                                         })
                                     }
-                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
                                     required
                                 />
                             </div>
@@ -373,7 +373,7 @@ export default function ThresholdsPage() {
                                         onChange={(e) =>
                                             setFormData({ ...formData, minValue: e.target.value })
                                         }
-                                        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                                        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
                                     />
                                 </div>
                                 <div>
@@ -387,7 +387,7 @@ export default function ThresholdsPage() {
                                         onChange={(e) =>
                                             setFormData({ ...formData, maxValue: e.target.value })
                                         }
-                                        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                                        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
                                     />
                                 </div>
                             </div>
@@ -402,7 +402,7 @@ export default function ThresholdsPage() {
                                         setFormData({ ...formData, description: e.target.value })
                                     }
                                     rows={3}
-                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 resize-none"
+                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/40 resize-none"
                                 />
                             </div>
 
@@ -416,7 +416,7 @@ export default function ThresholdsPage() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-red-600 flex items-center justify-center space-x-2"
+                                    className="flex-1 py-2 bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-semibold rounded-lg hover:from-emerald-300 hover:to-teal-300 flex items-center justify-center space-x-2"
                                 >
                                     <Save className="w-4 h-4" />
                                     <span>{editingThreshold ? 'Update' : 'Create'}</span>

@@ -127,12 +127,13 @@ export default function SuperAdminThresholdsPage() {
     <div className="space-y-6">
       <AdminPageHeader
         icon={SlidersHorizontal}
+        tone="super"
         title="Threshold Policies"
         description="Tune system thresholds used for confidence, performance, error-rate, and risk alerts."
       />
 
       {loading ? (
-        <LoadingState label="Loading threshold policies..." />
+        <LoadingState label="Loading threshold policies..." tone="super" />
       ) : rows.length === 0 ? (
         <EmptyState title="No threshold policies found" description="Default threshold policies will be created automatically." />
       ) : (
@@ -151,32 +152,32 @@ export default function SuperAdminThresholdsPage() {
                     <p className="mt-1 text-sm leading-6 text-slate-400">{row.description || 'No description'}</p>
                   </div>
                   <button onClick={() => save(row, !row.isActive)} disabled={saving} className="disabled:opacity-60">
-                    {saving ? <Loader className="h-4 w-4 animate-spin text-cyan-300" /> : <StatusPill active={row.isActive} activeText="Enabled" inactiveText="Disabled" />}
+                    {saving ? <Loader className="h-4 w-4 animate-spin text-fuchsia-300" /> : <StatusPill active={row.isActive} activeText="Enabled" inactiveText="Disabled" />}
                   </button>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <label className="text-sm text-slate-400">
                     Value
-                    <input type="number" value={draft.value ?? ''} onChange={(event) => updateDraft(row.id, 'value', event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-cyan-400/60" />
+                    <input type="number" value={draft.value ?? ''} onChange={(event) => updateDraft(row.id, 'value', event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-fuchsia-300/60" />
                   </label>
                   <label className="text-sm text-slate-400">
                     Min
-                    <input type="number" value={draft.minValue ?? ''} onChange={(event) => updateDraft(row.id, 'minValue', event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-cyan-400/60" />
+                    <input type="number" value={draft.minValue ?? ''} onChange={(event) => updateDraft(row.id, 'minValue', event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-fuchsia-300/60" />
                   </label>
                   <label className="text-sm text-slate-400">
                     Max
-                    <input type="number" value={draft.maxValue ?? ''} onChange={(event) => updateDraft(row.id, 'maxValue', event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-cyan-400/60" />
+                    <input type="number" value={draft.maxValue ?? ''} onChange={(event) => updateDraft(row.id, 'maxValue', event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-fuchsia-300/60" />
                   </label>
                 </div>
 
                 <label className="mt-3 block text-sm text-slate-400">
                   Description
-                  <textarea value={draft.description || ''} onChange={(event) => updateDraft(row.id, 'description', event.target.value)} rows={2} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-white outline-none focus:border-cyan-400/60" />
+                  <textarea value={draft.description || ''} onChange={(event) => updateDraft(row.id, 'description', event.target.value)} rows={2} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-white outline-none focus:border-fuchsia-300/60" />
                 </label>
 
                 <div className="mt-4 flex justify-end">
-                  <button onClick={() => save(row)} disabled={saving} className="inline-flex h-10 items-center gap-2 rounded-lg bg-cyan-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60">
+                  <button onClick={() => save(row)} disabled={saving} className="inline-flex h-10 items-center gap-2 rounded-lg bg-fuchsia-400 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-fuchsia-300 disabled:cursor-not-allowed disabled:opacity-60">
                     {saving ? <Loader className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                     Save Policy
                   </button>

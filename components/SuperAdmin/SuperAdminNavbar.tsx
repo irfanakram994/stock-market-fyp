@@ -1,14 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import { Bell, Crown, Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { Bell, ChevronDown, KeyRound, LogOut, Search, UserRound } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { RolePasswordModal, RoleProfileModal } from '@/components/Admin/RoleAccountModals';
 import { useSuperAdminAuth } from '@/lib/superAdminAuthContext';
 import { superAdminFetch } from '@/lib/superAdminApi';
 
 export default function SuperAdminNavbar() {
-  const { superAdmin } = useSuperAdminAuth();
+  const router = useRouter();
+  const { superAdmin, signOut, refreshSuperAdmin, updateSuperAdminProfile } = useSuperAdminAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const fetchUnreadCount = async () => {
@@ -28,41 +36,138 @@ export default function SuperAdminNavbar() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push('/');
+  };
+
+  const initial = superAdmin?.name?.charAt(0) || superAdmin?.email?.charAt(0)?.toUpperCase() || 'S';
+
   return (
-    <header className="h-16 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700/50 flex items-center justify-between px-6">
-      <div className="flex items-center flex-1 max-w-xl">
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search admins, logs, modules..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 focus:border-fuchsia-500/50 transition-all"
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center space-x-4">
-        <Link href="/super-admin/notifications" className="relative p-2 rounded-lg hover:bg-slate-700/50 transition-colors">
-          <Bell className="w-5 h-5 text-gray-400" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-fuchsia-500 rounded-full flex items-center justify-center text-xs text-white font-medium">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </Link>
-
-        <div className="h-8 w-px bg-slate-700"></div>
-
-        <div className="flex items-center space-x-3">
-          <div className="text-right hidden sm:block">
-            <p className="text-sm font-medium text-white">{superAdmin?.name || 'Super Admin'}</p>
-            <p className="text-xs text-fuchsia-300 font-medium uppercase">{superAdmin?.role || 'SUPER_ADMIN'}</p>
+    <>
+      <header className="h-16 border-b border-slate-800 bg-[#0b0d1c]/95 px-6 backdrop-blur-xl">
+        <div className="flex h-full items-center justify-between gap-4">
+          <div className="flex min-w-0 flex-1 items-center">
+            <div className="relative w-full max-w-xl">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Search admins, logs, modules..."
+                className="h-10 w-full rounded-lg border border-slate-800 bg-slate-950/60 pl-10 pr-4 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-600 focus:border-fuchsia-300/60"
+              />
+            </div>
           </div>
-          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-full flex items-center justify-center">
-            <Crown className="w-5 h-5 text-white" />
+
+          <div className="flex shrink-0 items-center gap-3">
+            <Link
+              href="/super-admin/notifications"
+              className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-800 bg-slate-950/40 text-slate-400 transition-colors hover:border-fuchsia-300/30 hover:text-fuchsia-300"
+              aria-label="Notifications"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-fuchsia-400 px-1 text-[10px] font-bold text-slate-950">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Link>
+
+            <div className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setShowDropdown((value) => !value)}
+                className="flex h-11 items-center gap-3 rounded-lg border border-slate-800 bg-slate-950/50 px-2.5 pr-3 text-left transition-colors hover:border-fuchsia-300/30 hover:bg-slate-900"
+                aria-expanded={showDropdown}
+              >
+                <div className="h-8 w-8 overflow-hidden rounded-lg border border-fuchsia-300/20 bg-fuchsia-400/10">
+                  {superAdmin?.profileImage ? (
+                    <Image src={superAdmin.profileImage} alt={superAdmin.name || 'Super Admin'} width={32} height={32} unoptimized className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-fuchsia-200">{initial}</div>
+                  )}
+                </div>
+                <div className="hidden min-w-0 sm:block">
+                  <p className="max-w-44 truncate text-sm font-semibold text-white">{superAdmin?.name || 'Super Admin'}</p>
+                  <p className="text-[11px] font-medium uppercase tracking-normal text-fuchsia-300">{superAdmin?.role || 'SUPER_ADMIN'}</p>
+                </div>
+                <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showDropdown && (
+                <div className="absolute right-0 top-12 z-40 w-64 overflow-hidden rounded-lg border border-slate-800 bg-[#0d1021] shadow-2xl shadow-black/35">
+                  <div className="border-b border-slate-800 px-4 py-3">
+                    <p className="truncate text-sm font-semibold text-white">{superAdmin?.name || 'Super Admin'}</p>
+                    <p className="truncate text-xs text-slate-400">{superAdmin?.email}</p>
+                  </div>
+                  <div className="p-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowProfile(true);
+                        setShowDropdown(false);
+                      }}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 transition-colors hover:bg-fuchsia-400/10 hover:text-fuchsia-200"
+                    >
+                      <UserRound className="h-4 w-4" />
+                      Edit Profile
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPassword(true);
+                        setShowDropdown(false);
+                      }}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 transition-colors hover:bg-fuchsia-400/10 hover:text-fuchsia-200"
+                    >
+                      <KeyRound className="h-4 w-4" />
+                      Change Password
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      className="mt-1 flex w-full items-center gap-3 rounded-lg border-t border-slate-800 px-3 py-2.5 text-sm text-red-300 transition-colors hover:bg-red-500/10"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <RoleProfileModal
+        isOpen={showProfile}
+        onClose={() => setShowProfile(false)}
+        account={superAdmin}
+        endpoint="/api/super-admin/profile"
+        fetcher={superAdminFetch}
+        refreshAccount={refreshSuperAdmin}
+        onProfileSaved={updateSuperAdminProfile}
+        tone="super"
+        roleLabel="Super Admin"
+      />
+      <RolePasswordModal
+        isOpen={showPassword}
+        onClose={() => setShowPassword(false)}
+        endpoint="/api/super-admin/change-password"
+        fetcher={superAdminFetch}
+        tone="super"
+        roleLabel="Super Admin"
+      />
+    </>
   );
 }

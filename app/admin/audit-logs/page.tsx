@@ -112,9 +112,9 @@ export default function AuditLogsPage() {
         if (action.includes('delete')) return 'bg-red-500/20 text-red-400 border-red-500/30';
         if (action.includes('create')) return 'bg-green-500/20 text-green-400 border-green-500/30';
         if (action.includes('update') || action.includes('edit'))
-            return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+            return 'bg-teal-400/10 text-teal-200 border-teal-300/25';
         if (action.includes('signin') || action.includes('signout'))
-            return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+            return 'bg-emerald-400/10 text-emerald-200 border-emerald-300/25';
         return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
     };
 
@@ -135,7 +135,7 @@ export default function AuditLogsPage() {
                     <p className="text-gray-400">Track all administrative actions</p>
                 </div>
                 <div className="flex items-center space-x-2 bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-2">
-                    <FileText className="w-5 h-5 text-orange-400" />
+                    <FileText className="w-5 h-5 text-emerald-300" />
                     <span className="text-white font-semibold">{pagination.total}</span>
                     <span className="text-gray-400">total logs</span>
                 </div>
@@ -154,7 +154,7 @@ export default function AuditLogsPage() {
                                 <span className="text-white text-sm">
                                     {formatAction(item.action)}
                                 </span>
-                                <span className="bg-orange-500/20 text-orange-400 text-xs px-2 py-0.5 rounded">
+                                <span className="bg-emerald-400/20 text-emerald-300 text-xs px-2 py-0.5 rounded">
                                     {item.count}
                                 </span>
                             </div>
@@ -231,7 +231,7 @@ export default function AuditLogsPage() {
                         <div className="flex items-end md:col-span-2">
                             <button
                                 type="submit"
-                                className="w-full px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-lg"
+                                className="w-full px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-semibold rounded-lg"
                             >
                                 Apply Filters
                             </button>
@@ -244,7 +244,7 @@ export default function AuditLogsPage() {
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
                 {loading ? (
                     <div className="flex items-center justify-center py-12">
-                        <Loader className="w-8 h-8 animate-spin text-orange-500" />
+                        <Loader className="w-8 h-8 animate-spin text-emerald-300" />
                     </div>
                 ) : logs.length === 0 ? (
                     <div className="text-center py-12">
@@ -261,7 +261,7 @@ export default function AuditLogsPage() {
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-start space-x-4">
                                         <div className="flex-shrink-0 mt-1">
-                                            <Activity className="w-5 h-5 text-orange-400" />
+                                            <Activity className="w-5 h-5 text-emerald-300" />
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex items-center space-x-3 mb-1">

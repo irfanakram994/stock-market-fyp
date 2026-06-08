@@ -137,11 +137,12 @@ export default function SuperAdminUsersPage() {
     <div className="space-y-6">
       <AdminPageHeader
         icon={Users}
+        tone="super"
         title="Platform Users"
         description="View and control registered user accounts separately from admin accounts."
         actions={
         <div className="flex items-center space-x-2 bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-2">
-          <Users className="w-5 h-5 text-orange-400" />
+          <Users className="w-5 h-5 text-fuchsia-300" />
           <span className="text-white font-semibold">{pagination.total}</span>
           <span className="text-gray-400">total users</span>
         </div>
@@ -149,10 +150,10 @@ export default function SuperAdminUsersPage() {
       />
 
       <form onSubmit={handleSearch} className="flex items-center space-x-4">
-        <SearchInput value={search} onChange={setSearch} placeholder="Search by email or name..." />
+        <SearchInput tone="super" value={search} onChange={setSearch} placeholder="Search by email or name..." />
         <button
           type="submit"
-          className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-red-600 transition-all"
+          className="px-6 py-3 bg-gradient-to-r from-fuchsia-400 to-violet-400 text-slate-950 font-semibold rounded-lg hover:from-fuchsia-300 hover:to-violet-300 transition-all"
         >
           Search
         </button>
@@ -160,7 +161,7 @@ export default function SuperAdminUsersPage() {
 
       <Panel className="overflow-hidden">
         {loading ? (
-          <LoadingState label="Loading users..." />
+          <LoadingState label="Loading users..." tone="super" />
         ) : users.length === 0 ? (
           <EmptyState title="No users found" description="Try a different search term." />
         ) : (
@@ -180,7 +181,7 @@ export default function SuperAdminUsersPage() {
                 <tr key={user.id} className="border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gradient-to-r from-fuchsia-400 to-violet-400 rounded-full flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">
                           {user.name?.charAt(0) || user.email.charAt(0).toUpperCase()}
                         </span>
@@ -208,7 +209,7 @@ export default function SuperAdminUsersPage() {
                   </td>
                   <td className="px-6 py-4 text-center">
                     <div className="flex items-center justify-center space-x-1">
-                      <Activity className="w-4 h-4 text-purple-400" />
+                      <Activity className="w-4 h-4 text-fuchsia-300" />
                       <span className="text-white font-medium">{user._count.agentLogs}</span>
                     </div>
                   </td>
@@ -276,7 +277,7 @@ export default function SuperAdminUsersPage() {
 
             <div className="space-y-4">
               <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-fuchsia-400 to-violet-400 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-2xl">
                     {selectedUser.name?.charAt(0) || selectedUser.email.charAt(0).toUpperCase()}
                   </span>

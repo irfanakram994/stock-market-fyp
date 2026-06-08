@@ -108,6 +108,7 @@ export default function SuperAdminConfigPage() {
     <div className="space-y-6">
       <AdminPageHeader
         icon={Settings}
+        tone="super"
         title="System-wide Configuration"
         description="Global feature and behavior values managed by Super Admin only."
       />
@@ -119,18 +120,18 @@ export default function SuperAdminConfigPage() {
               value={configKey}
               onChange={(event) => setConfigKey(event.target.value)}
               placeholder="config key"
-              className="h-11 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-cyan-400/60"
+              className="h-11 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-fuchsia-300/60"
               required
             />
             <input
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               placeholder="description"
-              className="h-11 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-cyan-400/60"
+              className="h-11 rounded-lg border border-slate-700 bg-slate-950/70 px-3 text-white outline-none focus:border-fuchsia-300/60"
             />
             <button
               disabled={saving}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-cyan-600 px-4 font-semibold text-white transition-colors hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-fuchsia-400 px-4 font-semibold text-slate-950 transition-colors hover:bg-fuchsia-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving && <Loader className="h-4 w-4 animate-spin" />}
               Save Config
@@ -140,14 +141,14 @@ export default function SuperAdminConfigPage() {
             value={configValue}
             onChange={(event) => setConfigValue(event.target.value)}
             rows={4}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 font-mono text-sm text-white outline-none focus:border-cyan-400/60"
+            className="w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 font-mono text-sm text-white outline-none focus:border-fuchsia-300/60"
             placeholder='{"key":"value"}'
           />
         </form>
       </Panel>
 
       {loading ? (
-        <LoadingState label="Loading global config..." />
+        <LoadingState label="Loading global config..." tone="super" />
       ) : rows.length === 0 ? (
         <EmptyState title="No config values yet" description="Create a config entry above." />
       ) : (
@@ -166,7 +167,7 @@ export default function SuperAdminConfigPage() {
               </div>
               <button onClick={() => toggle(row.id, row.isActive)} disabled={savingId === row.id} className="disabled:opacity-60">
                 {savingId === row.id ? (
-                  <Loader className="h-4 w-4 animate-spin text-cyan-300" />
+                  <Loader className="h-4 w-4 animate-spin text-fuchsia-300" />
                 ) : (
                   <StatusPill active={row.isActive} activeText="Active" inactiveText="Disabled" />
                 )}

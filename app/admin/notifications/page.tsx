@@ -197,11 +197,11 @@ export default function NotificationsPage() {
             case 'alert':
                 return <AlertTriangle className="w-5 h-5 text-red-400" />;
             case 'warning':
-                return <AlertCircle className="w-5 h-5 text-yellow-400" />;
+                return <AlertCircle className="w-5 h-5 text-lime-200" />;
             case 'success':
                 return <CheckCircle className="w-5 h-5 text-green-400" />;
             default:
-                return <Info className="w-5 h-5 text-blue-400" />;
+                return <Info className="w-5 h-5 text-emerald-300" />;
         }
     };
 
@@ -210,11 +210,11 @@ export default function NotificationsPage() {
             case 'alert':
                 return 'bg-red-500/20 border-red-500/30';
             case 'warning':
-                return 'bg-yellow-500/20 border-yellow-500/30';
+                return 'bg-lime-300/10 border-lime-300/25';
             case 'success':
                 return 'bg-green-500/20 border-green-500/30';
             default:
-                return 'bg-blue-500/20 border-blue-500/30';
+                return 'bg-teal-400/10 border-teal-300/25';
         }
     };
 
@@ -223,7 +223,7 @@ export default function NotificationsPage() {
             case 'critical':
                 return 'bg-red-500 text-white';
             case 'high':
-                return 'bg-orange-500 text-white';
+                return 'bg-emerald-400 text-slate-950';
             case 'normal':
                 return 'bg-gray-500 text-white';
             default:
@@ -251,7 +251,7 @@ export default function NotificationsPage() {
                     )}
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-red-600 transition-all"
+                        className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-semibold rounded-lg hover:from-emerald-300 hover:to-teal-300 transition-all"
                     >
                         <Plus className="w-5 h-5" />
                         <span>Create</span>
@@ -334,7 +334,7 @@ export default function NotificationsPage() {
                         <div className="flex items-end">
                             <button
                                 onClick={handleApplyFilters}
-                                className="w-full px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-lg"
+                                className="w-full px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-semibold rounded-lg"
                             >
                                 Apply
                             </button>
@@ -343,12 +343,12 @@ export default function NotificationsPage() {
                 )}
             </div>
 
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+            <div className="bg-emerald-400/10 border border-emerald-300/20 rounded-xl p-4">
                 <h2 className="text-white font-semibold mb-2">Notification Types and Categories</h2>
                 <div className="grid md:grid-cols-3 gap-3 text-sm text-gray-300">
-                    <p><span className="text-blue-300 font-medium">Categories:</span> system means platform status, user means account messages, prediction means forecast/model messages, and performance means uptime or response health.</p>
-                    <p><span className="text-blue-300 font-medium">Types:</span> info is neutral, success confirms completion, warning needs attention, and alert is urgent.</p>
-                    <p><span className="text-blue-300 font-medium">Priority:</span> low, normal, high, and critical decide how urgent the notification is.</p>
+                    <p><span className="text-emerald-300 font-medium">Categories:</span> system means platform status, user means account messages, prediction means forecast/model messages, and performance means uptime or response health.</p>
+                    <p><span className="text-emerald-300 font-medium">Types:</span> info is neutral, success confirms completion, warning needs attention, and alert is urgent.</p>
+                    <p><span className="text-emerald-300 font-medium">Priority:</span> low, normal, high, and critical decide how urgent the notification is.</p>
                 </div>
             </div>
 
@@ -356,7 +356,7 @@ export default function NotificationsPage() {
             <div className="space-y-4">
                 {loading ? (
                     <div className="flex items-center justify-center py-12">
-                        <Loader className="w-8 h-8 animate-spin text-orange-500" />
+                        <Loader className="w-8 h-8 animate-spin text-emerald-300" />
                     </div>
                 ) : notifications.length === 0 ? (
                     <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-12 text-center">
@@ -578,7 +578,7 @@ export default function NotificationsPage() {
                                         type="checkbox"
                                         checked={sendToUsers}
                                         onChange={(e) => setSendToUsers(e.target.checked)}
-                                        className="h-4 w-4 rounded border-gray-600 bg-slate-900 text-orange-500 focus:ring-orange-500"
+                                        className="h-4 w-4 rounded border-gray-600 bg-slate-900 text-emerald-300 focus:ring-emerald-300"
                                     />
                                     Send this notification to all regular users
                                 </label>
@@ -594,7 +594,7 @@ export default function NotificationsPage() {
                                 <button
                                     type="submit"
                                     disabled={creating}
-                                    className="flex-1 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-lg"
+                                    className="flex-1 py-2 bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-semibold rounded-lg"
                                 >
                                     {creating ? 'Sending...' : 'Create'}
                                 </button>

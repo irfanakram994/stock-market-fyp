@@ -8,6 +8,8 @@ interface AdminUser {
   id: string;
   email: string;
   name: string | null;
+  gender: string | null;
+  profileImage: string | null;
   role: string;
 }
 
@@ -16,6 +18,7 @@ interface AdminAuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   refreshAdmin: () => Promise<void>;
+  updateAdminProfile: (profile: Partial<Pick<AdminUser, 'name' | 'gender' | 'profileImage'>>) => void;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
@@ -94,8 +97,12 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateAdminProfile = (profile: Partial<Pick<AdminUser, 'name' | 'gender' | 'profileImage'>>) => {
+    setAdmin((current) => (current ? { ...current, ...profile } : current));
+  };
+
   return (
-    <AdminAuthContext.Provider value={{ admin, loading, signOut, refreshAdmin }}>
+    <AdminAuthContext.Provider value={{ admin, loading, signOut, refreshAdmin, updateAdminProfile }}>
       {children}
     </AdminAuthContext.Provider>
   );

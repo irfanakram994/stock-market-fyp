@@ -192,7 +192,7 @@ export default function PredictionsPage() {
                             <select
                                 value={filters.trend}
                                 onChange={(e) => setFilters({ ...filters, trend: e.target.value })}
-                                className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                                className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
                             >
                                 <option value="">All</option>
                                 <option value="bullish">Bullish</option>
@@ -208,7 +208,7 @@ export default function PredictionsPage() {
                                 onChange={(e) =>
                                     setFilters({ ...filters, startDate: e.target.value })
                                 }
-                                className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                                className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
                             />
                         </div>
                         <div>
@@ -219,13 +219,13 @@ export default function PredictionsPage() {
                                 onChange={(e) =>
                                     setFilters({ ...filters, endDate: e.target.value })
                                 }
-                                className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                                className="w-full px-3 py-2 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
                             />
                         </div>
                         <div className="flex items-end">
                             <button
                                 type="submit"
-                                className="w-full px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-red-600"
+                                className="w-full px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-semibold rounded-lg hover:from-emerald-300 hover:to-teal-300"
                             >
                                 Apply Filters
                             </button>
@@ -238,7 +238,7 @@ export default function PredictionsPage() {
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
                 {loading ? (
                     <div className="flex items-center justify-center py-12">
-                        <Loader className="w-8 h-8 animate-spin text-orange-500" />
+                        <Loader className="w-8 h-8 animate-spin text-emerald-300" />
                     </div>
                 ) : predictions.length === 0 ? (
                     <div className="text-center py-12">
@@ -307,7 +307,7 @@ export default function PredictionsPage() {
                                                         pred.confidence >= 0.7
                                                             ? 'bg-green-500'
                                                             : pred.confidence >= 0.4
-                                                            ? 'bg-yellow-500'
+                                                            ? 'bg-lime-300'
                                                             : 'bg-red-500'
                                                     }`}
                                                     style={{

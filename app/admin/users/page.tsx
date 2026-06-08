@@ -125,7 +125,7 @@ export default function UsersPage() {
                     <p className="text-gray-400">View and manage platform users</p>
                 </div>
                 <div className="flex items-center space-x-2 bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-2">
-                    <Users className="w-5 h-5 text-orange-400" />
+                    <Users className="w-5 h-5 text-emerald-300" />
                     <span className="text-white font-semibold">{pagination.total}</span>
                     <span className="text-gray-400">total users</span>
                 </div>
@@ -140,12 +140,12 @@ export default function UsersPage() {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search by email or name..."
-                        className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                        className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
                     />
                 </div>
                 <button
                     type="submit"
-                    className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-red-600 transition-all"
+                    className="px-6 py-3 bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-semibold rounded-lg hover:from-emerald-300 hover:to-teal-300 transition-all"
                 >
                     Search
                 </button>
@@ -155,7 +155,7 @@ export default function UsersPage() {
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
                 {loading ? (
                     <div className="flex items-center justify-center py-12">
-                        <Loader className="w-8 h-8 animate-spin text-orange-500" />
+                        <Loader className="w-8 h-8 animate-spin text-emerald-300" />
                     </div>
                 ) : users.length === 0 ? (
                     <div className="text-center py-12">
@@ -194,7 +194,7 @@ export default function UsersPage() {
                                 >
                                     <td className="px-6 py-4">
                                         <div className="flex items-center space-x-3">
-                                            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                                            <div className="w-10 h-10 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full flex items-center justify-center">
                                                 <span className="text-white font-semibold text-sm">
                                                     {user.name?.charAt(0) ||
                                                         user.email.charAt(0).toUpperCase()}
@@ -229,7 +229,7 @@ export default function UsersPage() {
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex items-center justify-center space-x-1">
-                                            <Activity className="w-4 h-4 text-purple-400" />
+                                            <Activity className="w-4 h-4 text-emerald-300" />
                                             <span className="text-white font-medium">
                                                 {user._count.agentLogs}
                                             </span>
@@ -312,7 +312,7 @@ export default function UsersPage() {
 
                         <div className="space-y-4">
                             <div className="flex items-center space-x-4">
-                                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                                <div className="w-16 h-16 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full flex items-center justify-center">
                                     <span className="text-white font-bold text-2xl">
                                         {selectedUser.name?.charAt(0) ||
                                             selectedUser.email.charAt(0).toUpperCase()}

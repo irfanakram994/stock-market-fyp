@@ -72,12 +72,13 @@ export default function SuperAdminModulesPage() {
     <div className="space-y-6">
       <AdminPageHeader
         icon={ToggleLeft}
+        tone="super"
         title="Module Control"
         description="Enable or disable major platform capabilities. Disabled modules return a clear access message from guarded APIs."
       />
 
       {loading ? (
-        <LoadingState label="Loading modules..." />
+        <LoadingState label="Loading modules..." tone="super" />
       ) : rows.length === 0 ? (
         <EmptyState title="No modules configured" description="Default modules will be created automatically by the API." />
       ) : (
@@ -96,7 +97,7 @@ export default function SuperAdminModulesPage() {
               </div>
               <button onClick={() => toggle(row)} disabled={savingId === row.id} className="disabled:cursor-not-allowed disabled:opacity-60">
                 {savingId === row.id ? (
-                  <Loader className="h-4 w-4 animate-spin text-cyan-300" />
+                  <Loader className="h-4 w-4 animate-spin text-fuchsia-300" />
                 ) : (
                   <StatusPill active={row.isEnabled} activeText="Enabled" inactiveText="Disabled" />
                 )}

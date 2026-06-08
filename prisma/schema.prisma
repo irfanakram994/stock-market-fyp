@@ -178,6 +178,8 @@ model AdminUser {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String?
+  gender    String?
+  profileImage String?
   role      String   @default("admin") // "admin" role only (no super admin)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -265,6 +267,8 @@ model SuperAdminUser {
   id          String   @id @default(cuid())
   email       String   @unique
   name        String?
+  gender      String?
+  profileImage String?
   role        String   @default("super_admin")
   isActive    Boolean  @default(true)
   permissions Json?

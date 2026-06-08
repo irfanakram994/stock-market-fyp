@@ -1,25 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import {
-  ShieldCheck,
-  LayoutDashboard,
-  UserCog,
-  Users,
   Activity,
   BarChart3,
-  Settings,
-  SlidersHorizontal,
   Bell,
-  FileText,
-  ToggleLeft,
   ChevronLeft,
   ChevronRight,
-  LogOut,
+  FileText,
+  LayoutDashboard,
+  Settings,
+  ShieldCheck,
+  SlidersHorizontal,
+  ToggleLeft,
+  UserCog,
+  Users,
 } from 'lucide-react';
-import { useSuperAdminAuth } from '@/lib/superAdminAuthContext';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/super-admin' },
@@ -37,55 +35,32 @@ const menuItems = [
 export default function SuperAdminSidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const { superAdmin, signOut } = useSuperAdminAuth();
-  const router = useRouter();
-
-  const handleSignOut = async () => {
-    await signOut();
-    router.push('/');
-  };
 
   return (
-    <div
-      className={`h-screen bg-gradient-to-b from-slate-900 to-slate-800 border-r border-slate-700/50 transition-all duration-300 ${
+    <aside
+      className={`flex h-screen flex-col border-r border-slate-800 bg-[#0b0d1c] transition-all duration-300 ${
         collapsed ? 'w-20' : 'w-72'
-      } flex flex-col`}
+      }`}
     >
-      <div className="p-3 border-b border-slate-700/50 flex items-center justify-between bg-gradient-to-r from-slate-900 to-slate-800/50">
+      <div className="flex h-16 items-center justify-between border-b border-slate-800 px-4">
         {!collapsed ? (
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-lg">
-              <ShieldCheck className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-fuchsia-300/25 bg-fuchsia-400/10">
+              <ShieldCheck className="h-5 w-5 text-fuchsia-300" />
             </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-lg font-semibold text-white">Super Admin</span>
-              <span className="text-xs text-gray-400 -mt-0.5">TradeFlux</span>
+            <div className="leading-tight">
+              <p className="text-sm font-semibold text-white">TradeFlux</p>
+              <p className="text-xs text-slate-500">Super Admin</p>
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-center w-10 h-10 mx-auto bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-lg">
-            <ShieldCheck className="w-6 h-6 text-white" />
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg border border-fuchsia-300/25 bg-fuchsia-400/10">
+            <ShieldCheck className="h-5 w-5 text-fuchsia-300" />
           </div>
         )}
       </div>
 
-      {!collapsed && superAdmin && (
-        <div className="p-4 border-b border-slate-700/50">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-sm">
-                {superAdmin.name?.charAt(0) || superAdmin.email.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-white truncate">{superAdmin.name || 'Super Admin'}</p>
-              <p className="text-xs text-gray-400 truncate">{superAdmin.email}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== '/super-admin' && pathname.startsWith(item.href));
@@ -94,42 +69,39 @@ export default function SuperAdminSidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                isActive
-                  ? 'bg-gradient-to-r from-purple-500/20 to-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 font-medium'
-                  : 'text-gray-400 hover:bg-slate-700/60 hover:text-fuchsia-300'
-              } ${collapsed ? 'justify-center' : ''}`}
               title={collapsed ? item.label : ''}
+              className={`group flex h-10 items-center gap-3 rounded-lg px-3 text-sm transition-colors ${
+                isActive
+                  ? 'border border-fuchsia-300/25 bg-fuchsia-400/10 text-fuchsia-200'
+                  : 'text-slate-400 hover:bg-slate-900 hover:text-slate-100'
+              } ${collapsed ? 'justify-center' : ''}`}
             >
-              <Icon className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && <span className="font-medium">{item.label}</span>}
+              <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-fuchsia-300' : 'text-slate-500 group-hover:text-fuchsia-300'}`} />
+              {!collapsed && <span className="truncate font-medium">{item.label}</span>}
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-700/50">
+      <div className="border-t border-slate-800 p-3">
+        {!collapsed && (
+          <div className="mb-3 flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/30 px-3 py-2 text-xs text-slate-500">
+            <span>Authority</span>
+            <span className="inline-flex items-center gap-1 text-fuchsia-300">
+              <ShieldCheck className="h-3 w-3" />
+              Root
+            </span>
+          </div>
+        )}
         <button
-          onClick={handleSignOut}
-          className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 ${
-            collapsed ? 'justify-center' : ''
-          }`}
-          title={collapsed ? 'Sign Out' : ''}
-        >
-          <LogOut className="w-5 h-5 flex-shrink-0" />
-          {!collapsed && <span className="font-medium">Sign Out</span>}
-        </button>
-      </div>
-
-      <div className="p-4 border-t border-slate-700/50 bg-gradient-to-r from-slate-900/50 to-slate-800">
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-center px-4 py-3 rounded-lg bg-slate-700/40 hover:bg-fuchsia-500/10 hover:text-fuchsia-300 text-gray-400 transition-all duration-200 border border-slate-600/30 hover:border-fuchsia-500/50"
+          type="button"
+          onClick={() => setCollapsed((value) => !value)}
+          className="flex h-10 w-full items-center justify-center rounded-lg border border-slate-800 bg-slate-950/40 text-slate-400 transition-colors hover:border-fuchsia-300/30 hover:text-fuchsia-300"
           title={collapsed ? 'Expand' : 'Collapse'}
         >
-          {collapsed ? <ChevronRight className="w-5 h-5" /> : <><ChevronLeft className="w-5 h-5 mr-2" /><span className="font-medium">Collapse</span></>}
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <><ChevronLeft className="mr-2 h-4 w-4" /><span className="text-sm font-medium">Collapse</span></>}
         </button>
       </div>
-    </div>
+    </aside>
   );
 }

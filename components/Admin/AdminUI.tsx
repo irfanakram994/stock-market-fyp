@@ -5,14 +5,28 @@ import type { LucideIcon } from 'lucide-react';
 import type React from 'react';
 
 type Tone = 'blue' | 'green' | 'red' | 'amber' | 'purple' | 'slate' | 'cyan';
+type RoleTone = 'admin' | 'super';
+
+const roleToneClasses: Record<RoleTone, { accent: string; focus: string; buttonHover: string }> = {
+  admin: {
+    accent: 'text-emerald-300',
+    focus: 'focus:border-emerald-300/60',
+    buttonHover: 'hover:border-emerald-300/40 hover:text-emerald-200',
+  },
+  super: {
+    accent: 'text-fuchsia-300',
+    focus: 'focus:border-fuchsia-300/60',
+    buttonHover: 'hover:border-fuchsia-300/40 hover:text-fuchsia-200',
+  },
+};
 
 const toneClasses: Record<Tone, { icon: string; soft: string; text: string; border: string }> = {
-  blue: { icon: 'text-blue-300', soft: 'bg-blue-500/10', text: 'text-blue-200', border: 'border-blue-400/20' },
+  blue: { icon: 'text-teal-300', soft: 'bg-teal-400/10', text: 'text-teal-200', border: 'border-teal-300/20' },
   green: { icon: 'text-emerald-300', soft: 'bg-emerald-500/10', text: 'text-emerald-200', border: 'border-emerald-400/20' },
   red: { icon: 'text-red-300', soft: 'bg-red-500/10', text: 'text-red-200', border: 'border-red-400/20' },
-  amber: { icon: 'text-amber-300', soft: 'bg-amber-500/10', text: 'text-amber-200', border: 'border-amber-400/20' },
-  purple: { icon: 'text-violet-300', soft: 'bg-violet-500/10', text: 'text-violet-200', border: 'border-violet-400/20' },
-  cyan: { icon: 'text-cyan-300', soft: 'bg-cyan-500/10', text: 'text-cyan-200', border: 'border-cyan-400/20' },
+  amber: { icon: 'text-lime-300', soft: 'bg-lime-300/10', text: 'text-lime-200', border: 'border-lime-300/20' },
+  purple: { icon: 'text-emerald-300', soft: 'bg-emerald-400/10', text: 'text-emerald-200', border: 'border-emerald-300/20' },
+  cyan: { icon: 'text-emerald-300', soft: 'bg-emerald-300/10', text: 'text-emerald-200', border: 'border-emerald-300/20' },
   slate: { icon: 'text-slate-300', soft: 'bg-slate-500/10', text: 'text-slate-200', border: 'border-slate-500/30' },
 };
 
@@ -21,18 +35,21 @@ export function AdminPageHeader({
   description,
   icon: Icon,
   actions,
+  tone = 'admin',
 }: {
   title: string;
   description?: string;
   icon?: LucideIcon;
   actions?: React.ReactNode;
+  tone?: RoleTone;
 }) {
+  const roleTone = roleToneClasses[tone];
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div className="flex min-w-0 items-center gap-3">
         {Icon && (
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-700/60 bg-slate-900/80">
-            <Icon className="h-5 w-5 text-cyan-300" />
+            <Icon className={`h-5 w-5 ${roleTone.accent}`} />
           </div>
         )}
         <div className="min-w-0">
@@ -90,11 +107,12 @@ export function Panel({ children, className = '' }: { children: React.ReactNode;
   return <div className={`rounded-lg border border-slate-800 bg-slate-900/70 shadow-xl shadow-black/10 ${className}`}>{children}</div>;
 }
 
-export function LoadingState({ label = 'Loading...' }: { label?: string }) {
+export function LoadingState({ label = 'Loading...', tone = 'admin' }: { label?: string; tone?: RoleTone }) {
+  const roleTone = roleToneClasses[tone];
   return (
     <div className="flex min-h-[220px] items-center justify-center rounded-lg border border-slate-800 bg-slate-900/50">
       <div className="text-center">
-        <Loader className="mx-auto mb-3 h-7 w-7 animate-spin text-cyan-300" />
+        <Loader className={`mx-auto mb-3 h-7 w-7 animate-spin ${roleTone.accent}`} />
         <p className="text-sm text-slate-400">{label}</p>
       </div>
     </div>
@@ -117,11 +135,14 @@ export function SearchInput({
   value,
   onChange,
   placeholder,
+  tone = 'admin',
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
+  tone?: RoleTone;
 }) {
+  const roleTone = roleToneClasses[tone];
   return (
     <div className="relative min-w-0 flex-1">
       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
@@ -129,19 +150,20 @@ export function SearchInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="h-11 w-full rounded-lg border border-slate-700 bg-slate-950/70 pl-10 pr-3 text-sm text-white outline-none transition-colors placeholder:text-slate-500 focus:border-cyan-400/60"
+        className={`h-11 w-full rounded-lg border border-slate-700 bg-slate-950/70 pl-10 pr-3 text-sm text-white outline-none transition-colors placeholder:text-slate-500 ${roleTone.focus}`}
       />
     </div>
   );
 }
 
-export function RefreshButton({ onClick, loading }: { onClick: () => void; loading?: boolean }) {
+export function RefreshButton({ onClick, loading, tone = 'admin' }: { onClick: () => void; loading?: boolean; tone?: RoleTone }) {
+  const roleTone = roleToneClasses[tone];
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm font-medium text-slate-200 transition-colors hover:border-cyan-400/40 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+      className={`inline-flex h-10 items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 ${roleTone.buttonHover}`}
     >
       <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
       Refresh
