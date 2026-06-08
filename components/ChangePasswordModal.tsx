@@ -63,6 +63,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
             const providers = user?.app_metadata?.providers;
             const identities = user?.identities;
             const hasEmailProvider =
+                user?.app_metadata?.tradeflux_password_set === true ||
                 (Array.isArray(providers) && providers.includes('email')) ||
                 (Array.isArray(identities) && identities.some((identity) => identity.provider === 'email'));
 
@@ -141,6 +142,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
             }
 
             const message = payload.message || 'Password updated successfully.';
+            await supabase.auth.refreshSession();
             setSuccess(message);
             showSnackbar({ variant: 'success', message });
             setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });

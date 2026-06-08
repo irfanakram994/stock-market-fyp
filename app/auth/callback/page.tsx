@@ -25,6 +25,20 @@ function getFallbackDisplayName(email?: string | null) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function hasEmailPasswordProvider(user: any) {
+  if (user?.app_metadata?.tradeflux_password_set === true) return true;
+
+  const providers = user?.app_metadata?.providers;
+  if (Array.isArray(providers) && providers.includes('email')) return true;
+
+  const identities = user?.identities;
+  if (Array.isArray(identities)) {
+    return identities.some((identity) => identity?.provider === 'email');
+  }
+
+  return false;
+}
+
 export default function AuthCallbackPage() {
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
@@ -91,6 +105,16 @@ export default function AuthCallbackPage() {
 
         if (!roleResult.success || !roleResult.redirectTo) {
           await redirectHomeWithError(roleResult.error || 'Unable to verify your account role. Please sign in again.');
+          return;
+        }
+
+        if (
+          roleResult.role === 'user' &&
+          !hasEmailPasswordProvider(session.user)
+        ) {
+          if (!mounted) return;
+          setStatus('Preparing your account security step...');
+          router.replace(`/auth/set-password?next=${encodeURIComponent(roleResult.redirectTo)}`);
           return;
         }
 

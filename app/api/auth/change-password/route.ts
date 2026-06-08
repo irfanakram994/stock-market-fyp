@@ -21,6 +21,8 @@ function createAnonClient() {
 }
 
 function hasEmailPasswordProvider(user: any) {
+  if (user?.app_metadata?.tradeflux_password_set === true) return true;
+
   const providers = user?.app_metadata?.providers;
   if (Array.isArray(providers) && providers.includes('email')) return true;
 
@@ -80,6 +82,10 @@ export async function POST(request: NextRequest) {
 
     const { error } = await supabaseServer.auth.admin.updateUserById(user.id, {
       password: newPassword,
+      app_metadata: {
+        ...(user.app_metadata || {}),
+        tradeflux_password_set: true,
+      },
     });
 
     if (error) {
