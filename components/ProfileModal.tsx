@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X, Upload, Loader2, Trash2, User as UserIcon } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/authContext';
+import { useSnackbar } from '@/components/SnackbarProvider';
 
 interface ProfileModalProps {
     isOpen: boolean;
@@ -12,6 +13,8 @@ interface ProfileModalProps {
 
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     const { user, refreshUser } = useAuth();
+    const { showSnackbar } = useSnackbar();
+    const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [name, setName] = useState(user?.name || '');
     const [gender, setGender] = useState(user?.gender || '');
     const [profileImage, setProfileImage] = useState<string | null>(user?.profileImage || null);
@@ -22,7 +25,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     const [success, setSuccess] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {
+            if (closeTimerRef.current) {
+                clearTimeout(closeTimerRef.current);
+                closeTimerRef.current = null;
+            }
+            return;
+        }
+        if (closeTimerRef.current) return;
 
         setName(user?.name || '');
         setGender(user?.gender || '');
@@ -32,6 +42,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         setError(null);
         setSuccess(null);
     }, [isOpen, user?.name, user?.gender, user?.profileImage]);
+
+    useEffect(() => {
+        return () => {
+            if (closeTimerRef.current) {
+                clearTimeout(closeTimerRef.current);
+            }
+        };
+    }, []);
 
     if (!isOpen) return null;
 
@@ -138,7 +156,13 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         }
 
         await refreshUser();
-        setSuccess('Profile updated successfully.');
+        const message = payload?.message || 'Profile updated successfully.';
+        setSuccess(message);
+        showSnackbar({ variant: 'success', message });
+        closeTimerRef.current = setTimeout(() => {
+            closeTimerRef.current = null;
+            onClose();
+        }, 600);
     };
 
     const handleRemovePhoto = () => {

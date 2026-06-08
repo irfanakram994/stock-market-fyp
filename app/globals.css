@@ -268,6 +268,188 @@ a {
   margin: 0.85rem 0;
 }
 
+/* Auth modal motion */
+.auth-side-panel {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.2), transparent 28%),
+    radial-gradient(circle at 86% 78%, rgba(34, 211, 238, 0.14), transparent 30%),
+    linear-gradient(145deg, #06101d 0%, #0a1628 58%, #07111f 100%);
+}
+
+.auth-side-panel--signup {
+  background:
+    radial-gradient(circle at 20% 14%, rgba(34, 211, 238, 0.24), transparent 30%),
+    radial-gradient(circle at 82% 76%, rgba(16, 185, 129, 0.14), transparent 30%),
+    linear-gradient(145deg, #06151f 0%, #092336 58%, #07141d 100%);
+}
+
+.auth-side-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+  background-size: 34px 34px;
+  animation: authGridDrift 10s linear infinite;
+}
+
+.auth-side-glow {
+  position: absolute;
+  inset: auto -20% -18% -20%;
+  height: 220px;
+  background: radial-gradient(circle at center, rgba(14, 165, 233, 0.2), transparent 62%);
+  filter: blur(10px);
+  animation: authGlowFloat 6.5s ease-in-out infinite;
+}
+
+.auth-side-panel--signup .auth-side-glow {
+  background: radial-gradient(circle at center, rgba(34, 211, 238, 0.22), transparent 62%);
+}
+
+.auth-side-copy,
+.auth-side-motion,
+.auth-form-swap {
+  animation: authSoftSwap 0.46s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-side-motion {
+  animation-delay: 0.04s;
+  width: min(100%, 312px);
+}
+
+.auth-orbit-card {
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 12px;
+  padding: 0.72rem;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(15, 23, 42, 0.24));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 48px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(14px);
+}
+
+.auth-highlight-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  border-radius: 10px;
+  padding: 0.38rem;
+  background: rgba(255, 255, 255, 0.055);
+  animation: authRowPulse 4.8s ease-in-out infinite;
+}
+
+.auth-highlight-row:nth-child(2) {
+  animation-delay: 0.45s;
+}
+
+.auth-highlight-row:nth-child(3) {
+  animation-delay: 0.9s;
+}
+
+.auth-ticker {
+  overflow: hidden;
+  width: 100%;
+  margin-top: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+}
+
+.auth-ticker-track {
+  display: flex;
+  width: max-content;
+  gap: 0.5rem;
+  padding: 0.38rem 0.5rem;
+  animation: authTicker 18s linear infinite;
+}
+
+.auth-ticker-track span {
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 0.2rem 0.48rem;
+  color: #dbeafe;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.auth-mode-toggle {
+  position: relative;
+}
+
+.auth-mode-indicator {
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  z-index: 0;
+  width: calc(50% - 0.25rem);
+  height: calc(100% - 0.5rem);
+  border-radius: 0.375rem;
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.08),
+    0 8px 22px rgba(15, 23, 42, 0.08);
+  transition:
+    transform 0.46s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.46s ease,
+    background-color 0.46s ease;
+}
+
+@keyframes authSoftSwap {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.996);
+    filter: blur(1px);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes authGridDrift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 34px 34px;
+  }
+}
+
+@keyframes authGlowFloat {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate3d(3%, -6%, 0) scale(1.08);
+  }
+}
+
+@keyframes authRowPulse {
+  0%,
+  100% {
+    background: rgba(255, 255, 255, 0.055);
+  }
+  50% {
+    background: rgba(255, 255, 255, 0.09);
+  }
+}
+
+@keyframes authTicker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 /* Premium post-login entry transition */
 .post-login-transition {
   --entry-accent: #38bdf8;

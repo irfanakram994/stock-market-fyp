@@ -4,6 +4,7 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import type React from 'react';
 import Image from 'next/image';
 import { AlertCircle, Camera, CheckCircle2, Eye, EyeOff, Loader2, Trash2, Upload, X } from 'lucide-react';
+import { useSnackbar } from '@/components/SnackbarProvider';
 
 type RoleTone = 'admin' | 'super';
 type RoleFetcher = (input: string, init?: RequestInit) => Promise<Response>;
@@ -126,8 +127,10 @@ export function RoleProfileModal({
   tone: RoleTone;
   roleLabel: string;
 }) {
+  const { showSnackbar } = useSnackbar();
   const styles = toneStyles[tone];
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [name, setName] = useState('');
   const [gender, setGender] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
@@ -138,7 +141,14 @@ export function RoleProfileModal({
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    if (!isOpen || !account) return;
+    if (!isOpen) {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+      return;
+    }
+    if (!account || closeTimerRef.current) return;
     setName(account.name || '');
     setGender(account.gender || '');
     setPreview(account.profileImage);
@@ -147,6 +157,14 @@ export function RoleProfileModal({
     setError('');
     setSuccess('');
   }, [account, isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -224,9 +242,15 @@ export function RoleProfileModal({
       } catch (refreshError) {
         console.warn('Profile saved, but refresh was skipped:', refreshError);
       }
-      setSuccess(payload.message || 'Profile updated successfully.');
+      const message = payload.message || 'Profile updated successfully.';
+      setSuccess(message);
+      showSnackbar({ variant: 'success', message });
       setImageDataUrl('');
       setRemoveProfileImage(false);
+      closeTimerRef.current = setTimeout(() => {
+        closeTimerRef.current = null;
+        onClose();
+      }, 600);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to update profile.');
     } finally {
@@ -334,7 +358,9 @@ export function RolePasswordModal({
   tone: RoleTone;
   roleLabel: string;
 }) {
+  const { showSnackbar } = useSnackbar();
   const styles = toneStyles[tone];
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -345,6 +371,11 @@ export function RolePasswordModal({
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+
     if (!isOpen) return;
     setCurrentPassword('');
     setNewPassword('');
@@ -354,6 +385,14 @@ export function RolePasswordModal({
     setError('');
     setSuccess('');
   }, [isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -386,7 +425,13 @@ export function RolePasswordModal({
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setSuccess(payload.message || 'Password updated successfully.');
+      const message = payload.message || 'Password updated successfully.';
+      setSuccess(message);
+      showSnackbar({ variant: 'success', message });
+      closeTimerRef.current = setTimeout(() => {
+        closeTimerRef.current = null;
+        onClose();
+      }, 600);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to update password.');
     } finally {

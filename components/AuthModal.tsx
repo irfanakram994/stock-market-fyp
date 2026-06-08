@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Mail, Lock, User, Facebook, Linkedin, Loader, Eye, EyeOff } from 'lucide-react';
+import { X, Mail, Lock, User, Loader, Eye, EyeOff, Sparkles, TrendingUp, Newspaper, CandlestickChart, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { resolveCurrentRole } from '@/lib/roleRouting';
 import { useSnackbar } from '@/components/SnackbarProvider';
@@ -30,6 +30,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     const { startTransition } = usePostLoginTransition();
     const [isSignIn, setIsSignIn] = useState(true);
     const [loading, setLoading] = useState(false);
+    const [oauthLoading, setOauthLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [forgotLoading, setForgotLoading] = useState(false);
     const [forgotMessage, setForgotMessage] = useState<string | null>(null);
@@ -43,6 +44,45 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     if (!isOpen) return null;
+
+    const modeTitle = isSignIn ? 'Welcome back' : 'Create your account';
+    const modeSubtitle = isSignIn
+        ? 'Sign in to continue to your forecasts, watchlist, and AI market workspace.'
+        : 'Set up your TradeFlux workspace with your account details.';
+    const submitLabel = isSignIn ? 'Sign in' : 'Sign up';
+    const panelContent = isSignIn
+        ? {
+            eyebrow: 'Your workspace is ready',
+            title: 'Fresh market signals are waiting for you.',
+            subtitle: 'Open your dashboard to review today\'s news, track trends, and continue watching the stocks that matter to you.',
+            accent: 'auth-side-panel--signin',
+            highlights: [
+                { icon: TrendingUp, label: 'Trend alerts', value: 'Updated now' },
+                { icon: Newspaper, label: 'Market news', value: 'Live feed ready' },
+                { icon: CandlestickChart, label: 'Saved stocks', value: 'Synced' },
+            ],
+            ticker: ['AAPL momentum updated', 'Latest headlines analyzed', 'Forecast dashboard ready', 'Watchlist changes synced'],
+        }
+        : {
+            eyebrow: 'New to TradeFlux?',
+            title: 'Start building a smarter trading routine.',
+            subtitle: 'Create your account to unlock AI forecasts, sentiment-aware news, saved stocks, and a personal dashboard built for daily decisions.',
+            accent: 'auth-side-panel--signup',
+            highlights: [
+                { icon: Sparkles, label: 'AI forecasts', value: 'Personalized' },
+                { icon: ShieldCheck, label: 'Secure profile', value: 'Role protected' },
+                { icon: TrendingUp, label: 'Market tools', value: 'Ready day one' },
+            ],
+            ticker: ['Join your AI trading workspace', 'Save stocks you care about', 'Read cleaner market signals', 'Turn news into insight'],
+        };
+
+    const switchMode = (nextIsSignIn: boolean) => {
+        setIsSignIn(nextIsSignIn);
+        setError(null);
+        setForgotMessage(null);
+        setShowPassword(false);
+        setShowConfirmPassword(false);
+    };
 
     const setAuthCookie = () => {
         document.cookie = 'tradeflux-auth=1; path=/; max-age=604800; samesite=lax';
@@ -211,54 +251,159 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         }
     };
 
-    const handleSocialLogin = (provider: string) => {
-        setError(`${provider} login coming soon`);
+    const handleGoogleOAuth = async () => {
+        setError(null);
+        setForgotMessage(null);
+        setOauthLoading(true);
+
+        try {
+            const redirectTo = `${window.location.origin}/auth/callback`;
+            const { error: oauthError } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo,
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'select_account',
+                    },
+                },
+            });
+
+            if (oauthError) {
+                setError(oauthError.message);
+                showSnackbar({ variant: 'error', message: oauthError.message });
+                setOauthLoading(false);
+            }
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Unable to start Google sign in.';
+            setError(message);
+            showSnackbar({ variant: 'error', message });
+            setOauthLoading(false);
+        }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="relative w-full max-w-4xl mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
-                {/* Close Button */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-3 backdrop-blur-md animate-fade-in sm:p-4">
+            <div className="relative grid w-full max-w-[940px] max-h-[92vh] overflow-hidden rounded-xl border border-slate-200/80 bg-slate-50 text-slate-950 shadow-2xl shadow-black/35 animate-slide-up md:h-[640px] md:grid-cols-[0.92fr_1.08fr]">
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 z-10 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    className="absolute right-3 top-3 z-10 rounded-lg border border-slate-200/80 bg-white/85 p-2 text-slate-500 shadow-sm backdrop-blur transition hover:border-slate-300 hover:bg-white hover:text-slate-900"
+                    aria-label="Close authentication modal"
                 >
-                    <X className="w-6 h-6 text-gray-600" />
+                    <X className="h-4 w-4" />
                 </button>
 
-                <div className="grid md:grid-cols-2">
-                    {/* Left Side - Form */}
-                    <div className="p-8 md:p-12">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-8">
-                            {isSignIn ? 'Signin' : 'Signup'}
-                        </h2>
+                <aside className={`auth-side-panel relative hidden min-h-0 overflow-hidden p-7 text-white transition-colors duration-700 md:flex md:flex-col ${panelContent.accent}`}>
+                    <div className="auth-side-grid absolute inset-0 opacity-35" />
+                    <div className="auth-side-glow" />
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
+                    <div key={isSignIn ? 'signin-side-copy' : 'signup-side-copy'} className="auth-side-copy relative">
+                        <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-sky-300/25 bg-sky-400/10 text-sky-200 shadow-lg shadow-sky-950/30">
+                            <Sparkles className="h-5 w-5" />
+                        </div>
+                        <p className="mt-4 text-xs font-semibold uppercase tracking-[0.24em] text-sky-200/80">{panelContent.eyebrow}</p>
+                        <h3 className="mt-3 max-w-xs text-[1.7rem] font-semibold leading-tight tracking-normal text-white">
+                            {panelContent.title}
+                        </h3>
+                        <p className="mt-3 max-w-sm text-sm leading-6 text-slate-300">
+                            {panelContent.subtitle}
+                        </p>
+                    </div>
+
+                    <div key={isSignIn ? 'signin-side-motion' : 'signup-side-motion'} className="auth-side-motion relative mt-7">
+                        <div className="auth-orbit-card">
+                            <div className="flex items-center justify-between gap-4">
+                                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-100/75">
+                                    {isSignIn ? 'Today' : 'Included'}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2 py-1 text-[11px] font-semibold text-emerald-100">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.85)]" />
+                                    Live
+                                </span>
+                            </div>
+                            <div className="mt-3 space-y-2.5">
+                                {panelContent.highlights.map((item) => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <div key={item.label} className="auth-highlight-row">
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/10 text-sky-100">
+                                                <Icon className="h-4 w-4" />
+                                            </span>
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block truncate text-sm font-medium text-white">{item.label}</span>
+                                                <span className="block text-xs text-slate-400">{item.value}</span>
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="auth-ticker" aria-hidden="true">
+                            <div className="auth-ticker-track">
+                                {[...panelContent.ticker, ...panelContent.ticker].map((item, index) => (
+                                    <span key={`${item}-${index}`}>{item}</span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <section className="min-h-0 overflow-y-auto bg-white md:overflow-hidden">
+                    <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-5 py-4 transition-all duration-500 sm:px-7 sm:py-5 md:h-full md:justify-start md:pt-8">
+                        <div className="auth-mode-toggle relative mb-4 grid h-11 grid-cols-2 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 p-1">
+                            <span
+                                className={`auth-mode-indicator ${isSignIn ? 'translate-x-0' : 'translate-x-full'}`}
+                                aria-hidden="true"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => switchMode(true)}
+                                className={`relative z-10 h-9 rounded-md text-sm font-semibold transition-colors duration-300 ${isSignIn ? 'text-slate-950' : 'text-slate-500 hover:text-slate-800'}`}
+                            >
+                                Sign in
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => switchMode(false)}
+                                className={`relative z-10 h-9 rounded-md text-sm font-semibold transition-colors duration-300 ${!isSignIn ? 'text-slate-950' : 'text-slate-500 hover:text-slate-800'}`}
+                            >
+                                Sign up
+                            </button>
+                        </div>
+
+                        <div key={isSignIn ? 'signin-heading' : 'signup-heading'} className="auth-form-swap mb-4 min-h-[90px]">
+                            <p className={`mb-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition-colors duration-500 ${isSignIn ? 'text-sky-600' : 'text-cyan-600'}`}>TradeFlux account</p>
+                            <h2 className="text-2xl font-semibold tracking-normal text-slate-950 sm:text-[1.7rem]">{modeTitle}</h2>
+                            <p className="mt-1.5 text-sm leading-5 text-slate-500">{modeSubtitle}</p>
+                        </div>
+
+                        <form key={isSignIn ? 'signin-form' : 'signup-form'} onSubmit={handleSubmit} className="auth-form-swap h-[320px] space-y-2.5">
                             {error && (
-                                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5">
                                     <p className="text-sm text-red-600">{error}</p>
                                 </div>
                             )}
 
                             {forgotMessage && (
-                                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
                                     <p className="text-sm text-emerald-700">{forgotMessage}</p>
                                 </div>
                             )}
 
                             {!isSignIn && (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="mb-1 block text-xs font-semibold uppercase tracking-normal text-slate-500">
                                         Name *
                                     </label>
-                                    <div className="relative">
-                                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <div className="group relative">
+                                        <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-sky-500" />
                                         <input
                                             type="text"
                                             placeholder="Enter your name"
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all text-gray-900"
+                                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm text-slate-950 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100"
                                             required={!isSignIn}
                                         />
                                     </div>
@@ -266,25 +411,25 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                             )}
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="mb-1 block text-xs font-semibold uppercase tracking-normal text-slate-500">
                                     Email *
                                 </label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <div className="group relative">
+                                    <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-sky-500" />
                                     <input
                                         type="email"
                                         placeholder="Enter your email"
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all text-gray-900"
+                                        className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm text-slate-950 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100"
                                         required
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="block text-sm font-medium text-gray-700">
+                                <div className="mb-1 flex items-center justify-between">
+                                    <label className="block text-xs font-semibold uppercase tracking-normal text-slate-500">
                                         Password *
                                     </label>
                                     {isSignIn && (
@@ -292,53 +437,55 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                                             type="button"
                                             onClick={handleForgotPassword}
                                             disabled={forgotLoading}
-                                            className="text-xs text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                                            className="text-xs font-semibold text-sky-600 transition hover:text-sky-700 disabled:opacity-50"
                                         >
-                                            {forgotLoading ? 'Sending...' : 'Forgot Password?'}
+                                            {forgotLoading ? 'Sending...' : 'Forgot password?'}
                                         </button>
                                     )}
                                 </div>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <div className="group relative">
+                                    <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-sky-500" />
                                     <input
                                         type={showPassword ? 'text' : 'password'}
                                         placeholder="Enter your password"
                                         value={formData.password}
                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        className="w-full pl-10 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all text-gray-900"
+                                        className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-11 text-sm text-slate-950 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100"
                                         required
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                        className="absolute right-2 top-1/2 rounded-md p-1.5 -translate-y-1/2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
                                     >
-                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </button>
                                 </div>
                             </div>
 
                             {!isSignIn && (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="mb-1 block text-xs font-semibold uppercase tracking-normal text-slate-500">
                                         Confirm Password *
                                     </label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <div className="group relative">
+                                        <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-sky-500" />
                                         <input
                                             type={showConfirmPassword ? 'text' : 'password'}
                                             placeholder="Confirm your password"
                                             value={formData.confirmPassword}
                                             onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                            className="w-full pl-10 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all text-gray-900"
+                                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-11 text-sm text-slate-950 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100"
                                             required={!isSignIn}
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            className="absolute right-2 top-1/2 rounded-md p-1.5 -translate-y-1/2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                                            aria-label={showConfirmPassword ? 'Hide confirmation password' : 'Show confirmation password'}
                                         >
-                                            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                         </button>
                                     </div>
                                 </div>
@@ -346,91 +493,57 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
                             <button
                                 type="submit"
-                                disabled={loading}
-                                className="w-full py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 font-semibold rounded-lg hover:from-yellow-500 hover:to-yellow-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                disabled={loading || oauthLoading}
+                                className="group mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-slate-950 text-sm font-semibold text-white shadow-lg shadow-slate-950/18 transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-xl disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-55"
                             >
                                 {loading ? (
                                     <>
-                                        <Loader className="w-5 h-5 animate-spin" />
+                                        <Loader className="h-4 w-4 animate-spin" />
                                         {isSignIn ? 'Signing in...' : 'Signing up...'}
                                     </>
                                 ) : (
-                                    isSignIn ? 'Signin' : 'Signup'
+                                    submitLabel
                                 )}
                             </button>
                         </form>
 
-                        <div className="mt-6">
-                            <div className="relative">
-                                <div className="absolute inset-0 flex items-center">
-                                    <div className="w-full border-t border-gray-200"></div>
-                                </div>
-                                <div className="relative flex justify-center text-sm">
-                                    <span className="px-4 bg-white text-gray-500">or signin with</span>
-                                </div>
-                            </div>
-
-                            <div className="mt-6 flex justify-center space-x-4">
-                                <button
-                                    onClick={() => handleSocialLogin('facebook')}
-                                    className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-lg"
-                                >
-                                    <Facebook className="w-5 h-5" fill="currentColor" />
-                                </button>
-                                <button
-                                    onClick={() => handleSocialLogin('google')}
-                                    className="p-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
-                                >
-                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                                    </svg>
-                                </button>
-                                <button
-                                    onClick={() => handleSocialLogin('linkedin')}
-                                    className="p-3 bg-blue-700 text-white rounded-full hover:bg-blue-800 transition-colors shadow-lg"
-                                >
-                                    <Linkedin className="w-5 h-5" fill="currentColor" />
-                                </button>
-                            </div>
+                        <div className="my-3 flex items-center gap-3">
+                            <div className="h-px flex-1 bg-slate-200" />
+                            <span className="text-xs font-medium text-slate-400">or continue with</span>
+                            <div className="h-px flex-1 bg-slate-200" />
                         </div>
-                    </div>
 
-                    {/* Right Side - Welcome Message */}
-                    <div className="hidden md:flex flex-col items-center justify-center p-12 bg-gradient-to-br from-slate-700 via-slate-600 to-slate-700 text-white">
-                        <div className="text-center">
-                            <h3 className="text-4xl font-bold mb-4">
-                                {isSignIn ? 'Welcome back!' : 'Hello, Friend!'}
-                            </h3>
-                            <p className="text-slate-200 mb-8 leading-relaxed">
-                                {isSignIn
-                                    ? "Welcome back! We are so happy to have you here. It's great to see you again. We hope you had a safe and enjoyable time away."
-                                    : "Enter your personal details and start your journey with us today!"}
-                            </p>
+                        <button
+                            type="button"
+                            onClick={handleGoogleOAuth}
+                            disabled={loading || oauthLoading}
+                            className="flex h-10 w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:shadow-md disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {oauthLoading ? (
+                                <Loader className="h-4 w-4 animate-spin text-sky-500" />
+                            ) : (
+                                <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                                </svg>
+                            )}
+                            {oauthLoading ? 'Opening Google...' : 'Continue with Google'}
+                        </button>
+
+                        <div className="mt-4 text-center text-sm text-slate-500 md:hidden">
+                            {isSignIn ? "Don't have an account? " : 'Already have an account? '}
                             <button
-                                onClick={() => setIsSignIn(!isSignIn)}
-                                className="px-8 py-3 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-slate-700 transition-all"
+                                type="button"
+                                onClick={() => switchMode(!isSignIn)}
+                                className="font-semibold text-sky-600 transition hover:text-sky-700"
                             >
-                                {isSignIn ? 'No account yet? Signup.' : 'Already have an account? Signin.'}
+                                {isSignIn ? 'Sign up' : 'Sign in'}
                             </button>
                         </div>
                     </div>
-                </div>
-
-                {/* Mobile Toggle */}
-                <div className="md:hidden p-6 text-center border-t border-gray-200">
-                    <button
-                        onClick={() => setIsSignIn(!isSignIn)}
-                        className="text-gray-600 hover:text-gray-900 font-medium"
-                    >
-                        {isSignIn ? "Don't have an account? " : 'Already have an account? '}
-                        <span className="text-yellow-500 font-semibold">
-                            {isSignIn ? 'Sign up' : 'Sign in'}
-                        </span>
-                    </button>
-                </div>
+                </section>
             </div>
         </div>
     );

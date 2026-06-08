@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     Bell,
     AlertTriangle,
@@ -17,6 +17,7 @@ import {
     X,
 } from 'lucide-react';
 import { adminFetch } from '@/lib/adminApi';
+import { useSnackbar } from '@/components/SnackbarProvider';
 
 interface Notification {
     id: string;
@@ -41,7 +42,17 @@ interface Pagination {
     totalPages: number;
 }
 
+const DEFAULT_NOTIFICATION_FORM = {
+    type: 'info',
+    title: '',
+    message: '',
+    category: 'system',
+    priority: 'normal',
+};
+
 export default function NotificationsPage() {
+    const { showSnackbar } = useSnackbar();
+    const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -62,16 +73,11 @@ export default function NotificationsPage() {
     const [sendToUsers, setSendToUsers] = useState(false);
     const [creating, setCreating] = useState(false);
     const [createError, setCreateError] = useState('');
-    const [newNotification, setNewNotification] = useState({
-        type: 'info',
-        title: '',
-        message: '',
-        category: 'system',
-        priority: 'normal',
-    });
+    const [newNotification, setNewNotification] = useState(DEFAULT_NOTIFICATION_FORM);
 
-    const fetchNotifications = async (page = 1) => {
-        setLoading(true);
+    const fetchNotifications = async (page = 1, options: { showLoader?: boolean } = {}) => {
+        const showLoader = options.showLoader ?? true;
+        if (showLoader) setLoading(true);
         try {
             const params = new URLSearchParams({
                 page: page.toString(),
@@ -94,13 +100,42 @@ export default function NotificationsPage() {
         } catch (error) {
             console.error('Error fetching notifications:', error);
         } finally {
-            setLoading(false);
+            if (showLoader) setLoading(false);
         }
     };
 
     useEffect(() => {
         fetchNotifications();
     }, []);
+
+    useEffect(() => {
+        return () => {
+            if (closeTimerRef.current) {
+                clearTimeout(closeTimerRef.current);
+            }
+        };
+    }, []);
+
+    const resetCreateModal = () => {
+        if (closeTimerRef.current) {
+            clearTimeout(closeTimerRef.current);
+            closeTimerRef.current = null;
+        }
+        setShowCreateModal(false);
+        setSendToUsers(false);
+        setCreating(false);
+        setCreateError('');
+        setNewNotification(DEFAULT_NOTIFICATION_FORM);
+    };
+
+    const openCreateModal = () => {
+        if (closeTimerRef.current) {
+            clearTimeout(closeTimerRef.current);
+            closeTimerRef.current = null;
+        }
+        setCreateError('');
+        setShowCreateModal(true);
+    };
 
     const handleMarkAsRead = async (ids: string[]) => {
         try {
@@ -167,16 +202,14 @@ export default function NotificationsPage() {
             });
             const data = await res.json();
             if (data.success) {
-                setShowCreateModal(false);
-                setSendToUsers(false);
-                setNewNotification({
-                    type: 'info',
-                    title: '',
-                    message: '',
-                    category: 'system',
-                    priority: 'normal',
-                });
-                await fetchNotifications(1);
+                const message = sendToUsers ? 'Notification sent to users successfully.' : 'Notification created successfully.';
+                showSnackbar({ variant: 'success', message });
+                setCreating(false);
+                closeTimerRef.current = setTimeout(() => {
+                    closeTimerRef.current = null;
+                    resetCreateModal();
+                }, 600);
+                void fetchNotifications(1, { showLoader: false });
             } else {
                 setCreateError(data.error || 'Failed to create notification.');
             }
@@ -250,7 +283,7 @@ export default function NotificationsPage() {
                         </button>
                     )}
                     <button
-                        onClick={() => setShowCreateModal(true)}
+                        onClick={openCreateModal}
                         className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-semibold rounded-lg hover:from-emerald-300 hover:to-teal-300 transition-all"
                     >
                         <Plus className="w-5 h-5" />
@@ -466,7 +499,7 @@ export default function NotificationsPage() {
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-xl font-bold text-white">Create Notification</h3>
                             <button
-                                onClick={() => setShowCreateModal(false)}
+                                onClick={resetCreateModal}
                                 className="text-gray-400 hover:text-white"
                             >
                                 <X className="w-6 h-6" />
@@ -586,7 +619,7 @@ export default function NotificationsPage() {
                             <div className="flex space-x-3 pt-4">
                                 <button
                                     type="button"
-                                    onClick={() => setShowCreateModal(false)}
+                                    onClick={resetCreateModal}
                                     className="flex-1 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600"
                                 >
                                     Cancel
