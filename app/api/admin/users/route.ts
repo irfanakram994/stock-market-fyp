@@ -3,12 +3,14 @@ import { prisma } from '@/lib/prisma';
 import { extractBearerToken, verifyAdminSession, createAuditLog } from '@/lib/adminAuth';
 import { requireModuleEnabled } from '@/lib/moduleGuard';
 
+const BLOCKED_ACCOUNT_MESSAGE =
+  'Your account has been blocked. Please contact the TradeFlux team to resolve this matter, as this restriction may be related to policy violations on your account.';
+
 // GET - List all users with optional filters
 export async function GET(request: NextRequest) {
   try {
     const accessToken = extractBearerToken(request.headers.get('authorization'));
-    const adminEmail = request.nextUrl.searchParams.get('adminEmail') || undefined;
-    const session = await verifyAdminSession({ email: adminEmail, accessToken });
+    const session = await verifyAdminSession({ accessToken });
     if (!session.success) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
@@ -94,8 +96,7 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const accessToken = extractBearerToken(request.headers.get('authorization'));
-    const adminEmail = request.nextUrl.searchParams.get('adminEmail') || undefined;
-    const session = await verifyAdminSession({ email: adminEmail, accessToken });
+    const session = await verifyAdminSession({ accessToken });
     if (!session.success || !session.admin) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
@@ -129,7 +130,7 @@ export async function PATCH(request: NextRequest) {
       where: { id: userId },
       data: {
         isBlocked: action === 'deactivate',
-        blockedReason: action === 'deactivate' ? 'Account deactivated by admin.' : null,
+        blockedReason: action === 'deactivate' ? BLOCKED_ACCOUNT_MESSAGE : null,
       },
     });
 

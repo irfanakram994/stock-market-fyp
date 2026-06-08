@@ -74,7 +74,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
                 signedInAccessToken = data.session.access_token;
                 setAuthCookie();
-                showSnackbar({ variant: 'success', message: 'Signed in successfully.' });
             } else {
                 if (formData.password !== formData.confirmPassword) {
                     setError('Passwords do not match');
@@ -117,15 +116,21 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 return;
             }
 
-            // Reset form
-            setFormData({ email: '', password: '', name: '', confirmPassword: '' });
-            onSuccess();
-
             const roleResult = await resolveCurrentRole(signedInAccessToken);
             if (roleResult.success && roleResult.redirectTo) {
+                // Reset form only after role resolution succeeds.
+                setFormData({ email: '', password: '', name: '', confirmPassword: '' });
+                onSuccess();
+                showSnackbar({ variant: 'success', message: 'Signed in successfully.' });
                 router.push(roleResult.redirectTo);
             } else {
-                router.push('/dashboard');
+                await supabase.auth.signOut({ scope: 'global' });
+                document.cookie = 'tradeflux-auth=; path=/; max-age=0; samesite=lax';
+                const message = roleResult.error || 'Unable to verify your account role. Please sign in again.';
+                setError(message);
+                if (roleResult.code !== 'USER_BLOCKED') {
+                    showSnackbar({ variant: 'error', message });
+                }
             }
         } catch (err) {
             const message = err instanceof Error ? err.message : 'An error occurred';

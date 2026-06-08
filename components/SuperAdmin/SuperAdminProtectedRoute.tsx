@@ -10,7 +10,7 @@ export function SuperAdminProtectedRoute({ children }: { children: React.ReactNo
 
   useEffect(() => {
     if (!loading && !superAdmin) {
-      router.push('/');
+      router.push('/super-admin/login');
     }
   }, [loading, superAdmin, router]);
 

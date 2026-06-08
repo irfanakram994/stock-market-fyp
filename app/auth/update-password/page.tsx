@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabaseClient';
 type Role = 'user' | 'admin' | 'super-admin';
 
 function getLoginPath(role: string): string {
-  if (role === 'admin') return '/admin/login';
+  if (role === 'admin') return '/';
   if (role === 'super-admin') return '/super-admin/login';
   return '/';
 }

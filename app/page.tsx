@@ -17,6 +17,13 @@ export default function LandingPage() {
     const router = useRouter();
     const { user, loading } = useAuth();
 
+    const navigateToResolvedDashboard = async () => {
+        const roleResult = await resolveCurrentRole();
+        if (roleResult.success && roleResult.redirectTo) {
+            router.push(roleResult.redirectTo);
+        }
+    };
+
     // Redirect to the right panel when the logged-in account is already authenticated
     useEffect(() => {
         if (loading) return;
@@ -30,8 +37,6 @@ export default function LandingPage() {
             const roleResult = await resolveCurrentRole();
             if (roleResult.success && roleResult.redirectTo) {
                 router.push(roleResult.redirectTo);
-            } else {
-                router.push('/dashboard');
             }
             setRedirectResolved(true);
         };
@@ -76,7 +81,7 @@ export default function LandingPage() {
                             {!loading && user ? (
                                 <>
                                     <button
-                                        onClick={() => router.push('/dashboard')}
+                                        onClick={navigateToResolvedDashboard}
                                         style={{
                                             background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)',
                                             color: 'white',

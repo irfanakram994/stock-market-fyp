@@ -3,9 +3,10 @@
 import { useAuth } from '@/lib/authContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { resolveCurrentRole } from '@/lib/roleRouting';
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -13,6 +14,34 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       router.push('/');
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (loading || !user) return;
+
+    let cancelled = false;
+
+    const redirectPrivilegedRole = async () => {
+      const roleResult = await resolveCurrentRole();
+      if (cancelled) return;
+      if (!roleResult.success) {
+        if (roleResult.code === 'USER_BLOCKED') {
+          await signOut();
+          router.replace('/');
+        }
+        return;
+      }
+      if (!roleResult.redirectTo) return;
+      if (roleResult.role === 'admin' || roleResult.role === 'super_admin') {
+        router.replace(roleResult.redirectTo);
+      }
+    };
+
+    redirectPrivilegedRole();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, loading, router, signOut]);
 
   if (loading) {
     return (

@@ -24,11 +24,10 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [admin, setAdmin] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const verifyAdminStatus = async (email: string): Promise<AdminUser | null> => {
+  const verifyAdminStatus = async (): Promise<AdminUser | null> => {
     try {
       const res = await adminFetch('/api/admin/auth/verify', {
         method: 'POST',
-        body: JSON.stringify({ email }),
       });
       const data = await res.json();
       if (data.success && data.admin) {
@@ -44,8 +43,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     const checkAdmin = async () => {
       try {
         const { data } = await supabase.auth.getSession();
-        if (data.session?.user?.email) {
-          const adminData = await verifyAdminStatus(data.session.user.email);
+        if (data.session?.access_token) {
+          const adminData = await verifyAdminStatus();
           setAdmin(adminData);
         }
       } catch (error) {
@@ -58,8 +57,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     checkAdmin();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user?.email) {
-        const adminData = await verifyAdminStatus(session.user.email);
+      if (session?.access_token) {
+        const adminData = await verifyAdminStatus();
         setAdmin(adminData);
       } else {
         setAdmin(null);
@@ -86,8 +85,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const refreshAdmin = async () => {
     try {
       const { data } = await supabase.auth.getSession();
-      if (data.session?.user?.email) {
-        const adminData = await verifyAdminStatus(data.session.user.email);
+      if (data.session?.access_token) {
+        const adminData = await verifyAdminStatus();
         setAdmin(adminData);
       }
     } catch (error) {

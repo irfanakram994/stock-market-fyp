@@ -49,8 +49,22 @@ export async function superAdminSignIn(email: string, password: string): Promise
       };
     }
 
+    const { data, error } = await supabaseServer.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error || !data.user?.email) {
+      return {
+        success: false,
+        message: 'Authentication failed',
+        error: error?.message,
+      };
+    }
+
     const superAdmin = await getActiveSuperAdminByEmail(email);
     if (!superAdmin) {
+      await supabaseServer.auth.signOut();
       return {
         success: false,
         message: 'Access denied. Super Admin privileges required.',
@@ -111,7 +125,14 @@ export async function verifySuperAdminSession(
   try {
     let resolvedEmail = options.email;
 
-    if (!resolvedEmail && options.accessToken) {
+    if (!options.accessToken) {
+      return {
+        success: false,
+        message: 'Not authenticated',
+      };
+    }
+
+    if (options.accessToken) {
       const { data, error } = await supabaseServer.auth.getUser(options.accessToken);
       if (error) {
         return {
@@ -121,7 +142,22 @@ export async function verifySuperAdminSession(
         };
       }
 
-      resolvedEmail = data.user?.email;
+      const tokenEmail = data.user?.email;
+      if (!tokenEmail) {
+        return {
+          success: false,
+          message: 'Not authenticated',
+        };
+      }
+
+      if (resolvedEmail && resolvedEmail !== tokenEmail) {
+        return {
+          success: false,
+          message: 'Session email mismatch',
+        };
+      }
+
+      resolvedEmail = tokenEmail;
     }
 
     if (!resolvedEmail) {

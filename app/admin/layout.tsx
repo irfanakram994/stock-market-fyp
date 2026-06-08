@@ -13,11 +13,6 @@ export default function AdminLayout({
 }) {
     const pathname = usePathname();
     
-    // Don't apply protection to login page
-    if (pathname === '/admin/login') {
-        return <>{children}</>;
-    }
-
     return (
         <AdminAuthProvider>
             <AdminProtectedRoute>

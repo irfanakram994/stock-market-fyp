@@ -24,11 +24,10 @@ export function SuperAdminAuthProvider({ children }: { children: React.ReactNode
   const [superAdmin, setSuperAdmin] = useState<SuperAdminUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const verify = async (email: string): Promise<SuperAdminUser | null> => {
+  const verify = async (): Promise<SuperAdminUser | null> => {
     try {
       const res = await superAdminFetch('/api/super-admin/auth/verify', {
         method: 'POST',
-        body: JSON.stringify({ email }),
       });
       const data = await res.json();
       return data.success ? data.superAdmin : null;
@@ -41,8 +40,8 @@ export function SuperAdminAuthProvider({ children }: { children: React.ReactNode
     const check = async () => {
       try {
         const { data } = await supabase.auth.getSession();
-        if (data.session?.user?.email) {
-          const verified = await verify(data.session.user.email);
+        if (data.session?.access_token) {
+          const verified = await verify();
           setSuperAdmin(verified);
         }
       } finally {
@@ -55,8 +54,8 @@ export function SuperAdminAuthProvider({ children }: { children: React.ReactNode
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user?.email) {
-        const verified = await verify(session.user.email);
+      if (session?.access_token) {
+        const verified = await verify();
         setSuperAdmin(verified);
       } else {
         setSuperAdmin(null);
@@ -82,8 +81,8 @@ export function SuperAdminAuthProvider({ children }: { children: React.ReactNode
 
   const refreshSuperAdmin = async () => {
     const { data } = await supabase.auth.getSession();
-    if (data.session?.user?.email) {
-      const verified = await verify(data.session.user.email);
+    if (data.session?.access_token) {
+      const verified = await verify();
       setSuperAdmin(verified);
     }
   };

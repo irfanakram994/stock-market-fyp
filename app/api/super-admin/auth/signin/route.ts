@@ -1,46 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { extractBearerToken, verifySuperAdminSession } from '@/lib/superAdminAuth';
-import { prisma } from '@/lib/prisma';
+import { superAdminSignIn } from '@/lib/superAdminAuth';
 
 export async function POST(request: NextRequest) {
   try {
-    const accessToken = extractBearerToken(request.headers.get('authorization'));
-    let email: string | undefined;
+    const { email, password } = await request.json();
 
-    try {
-      const body = await request.json();
-      email = body?.email;
-    } catch {
-      email = undefined;
-    }
-
-    if (!accessToken) {
+    if (!email || !password) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: 'Email and password are required' },
+        { status: 400 }
       );
     }
 
-    const result = await verifySuperAdminSession({ email, accessToken });
-    if (!result.success || !result.superAdmin) {
-      return NextResponse.json(
-        { success: false, error: result.error || result.message || 'Access denied' },
-        { status: 401 }
-      );
-    }
-
-    await prisma.superAdminUser.update({
-      where: { id: result.superAdmin.id },
-      data: { lastLogin: new Date() },
-    });
+    const result = await superAdminSignIn(email, password);
 
     return NextResponse.json(
-      {
-        success: true,
-        message: 'Super Admin signin successful',
-        superAdmin: result.superAdmin,
-      },
-      { status: 200 }
+      result.success
+        ? result
+        : { success: false, error: result.error || result.message },
+      { status: result.success ? 200 : 401 }
     );
   } catch (error) {
     return NextResponse.json(

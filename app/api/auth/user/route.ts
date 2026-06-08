@@ -9,7 +9,12 @@ interface AppUserRow {
   name: string | null;
   gender?: string | null;
   profileImage?: string | null;
+  isBlocked?: boolean;
+  blockedReason?: string | null;
 }
+
+const BLOCKED_ACCOUNT_MESSAGE =
+  'Your account has been blocked. Please contact the TradeFlux team to resolve this matter, as this restriction may be related to policy violations on your account.';
 
 function extractBearerToken(authorizationHeader: string | null): string | undefined {
   if (!authorizationHeader) return undefined;
@@ -18,33 +23,29 @@ function extractBearerToken(authorizationHeader: string | null): string | undefi
   return token;
 }
 
-async function resolveAccessToken(request: NextRequest): Promise<string | undefined> {
+async function readJsonBody(request: NextRequest): Promise<any> {
+  try {
+    return await request.json();
+  } catch {
+    return {};
+  }
+}
+
+function resolveAccessToken(request: NextRequest, body: any): string | undefined {
   const headerToken = extractBearerToken(request.headers.get('authorization'));
   if (headerToken) return headerToken;
 
-  if (request.method === 'POST') {
-    try {
-      const body = await request.json();
-      if (typeof body?.accessToken === 'string' && body.accessToken.length > 0) {
-        return body.accessToken;
-      }
-    } catch {
-      return undefined;
-    }
+  if (request.method === 'POST' && typeof body?.accessToken === 'string' && body.accessToken.length > 0) {
+    return body.accessToken;
   }
 
   return undefined;
 }
 
-async function resolveRefreshToken(request: NextRequest): Promise<string | undefined> {
+function resolveRefreshToken(request: NextRequest, body: any): string | undefined {
   if (request.method !== 'POST') return undefined;
-  try {
-    const body = await request.json();
-    if (typeof body?.refreshToken === 'string' && body.refreshToken.length > 0) {
-      return body.refreshToken;
-    }
-  } catch {
-    return undefined;
+  if (typeof body?.refreshToken === 'string' && body.refreshToken.length > 0) {
+    return body.refreshToken;
   }
   return undefined;
 }
@@ -107,6 +108,8 @@ async function ensureAppUser(id: string, email: string, name: string | null): Pr
       name: true,
       gender: true,
       profileImage: true,
+      isBlocked: true,
+      blockedReason: true,
     },
   });
 
@@ -115,8 +118,9 @@ async function ensureAppUser(id: string, email: string, name: string | null): Pr
 
 async function handleUserRequest(request: NextRequest) {
   try {
-    const accessToken = await resolveAccessToken(request);
-    const refreshToken = await resolveRefreshToken(request);
+    const body = request.method === 'POST' ? await readJsonBody(request) : {};
+    const accessToken = resolveAccessToken(request, body);
+    const refreshToken = resolveRefreshToken(request, body);
     if (!accessToken) {
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },
@@ -138,6 +142,17 @@ async function handleUserRequest(request: NextRequest) {
       authResult.user.email || '',
       authResult.user.user_metadata?.name || null
     );
+
+    if (appUser.isBlocked) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: BLOCKED_ACCOUNT_MESSAGE,
+          code: 'USER_BLOCKED',
+        },
+        { status: 403 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

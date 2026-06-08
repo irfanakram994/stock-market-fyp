@@ -7,12 +7,46 @@ interface ChatMessage {
   content: string;
 }
 
+const TRADEFLUX_TEAM =
+  "Trade Flux Team:\n" +
+  "- Irfan Ali 22011519-029\n" +
+  "- Zainab Mazhar 22011519-043\n" +
+  "- Syed Mohsin Taseer Naqvi 22011519-067";
+
+const PROJECT_CONTEXT = `
+TradeFlux is an Agentic AI Stock Market Prediction System. It has a Next.js dashboard, Next.js API routes, PostgreSQL with Prisma, Python agents, Yahoo Finance market data, News API news, Prophet forecasting, sentiment analysis, and Groq/OpenAI LLM insights.
+
+Dashboard navigation labels:
+- Dashboard
+- Stock Analysis
+- AI Predictions
+- Chatbot
+- Backtesting
+- Visualizations
+- Agent Logs
+- About Project
+
+Important TradeFlux workflows:
+- To view Apple's 29-day forecast: open AI Predictions from the sidebar, choose AAPL or Apple in Stock Symbol, set Forecast Days to 29, click Run Prediction, then review the Price Forecast graph and the final forecast point/day-29 value.
+- To change password: click the top-right user profile area in the navbar, choose Change Password, enter Current Password, New Password, and Confirm New Password, then click Update Password.
+- To download prediction reports: open AI Predictions, select or run a forecast, then use the CSV or JSON buttons near the page header.
+- To inspect agent execution: open Agent Logs from the sidebar.
+- To learn about the system: open About Project from the sidebar.
+
+Team identity:
+${TRADEFLUX_TEAM}
+`;
+
 const SYSTEM_PROMPT =
-  "You are TradeFlux Chat, a concise assistant for stocks, trading, investing, and market news. " +
-  "Use clean Markdown with short paragraphs, bullets, and numbering where helpful. " +
-  "If the user asks for N items (e.g., 5, 10), respond with a numbered list using '1.' style and include exactly N items. " +
-  "Answer with clear steps, highlight risks, and avoid guarantees. " +
-  "Do not claim real-time market access; if asked for latest data, say it may be delayed and suggest sources to verify.";
+  "You are TradeFlux Chat, a concise assistant for the TradeFlux app, stocks, trading, investing, and market news.\n\n" +
+  PROJECT_CONTEXT +
+  "\nResponse rules:\n" +
+  "- Use clean Markdown with short paragraphs, bullets, and numbered steps where helpful.\n" +
+  "- If the user asks for N items, respond with a numbered list using '1.' style and include exactly N items.\n" +
+  "- For TradeFlux how-to questions, use the exact dashboard labels from the project context.\n" +
+  "- If asked who made you, who created TradeFlux, or who is the team, answer with the Trade Flux Team list exactly.\n" +
+  "- Answer market questions educationally, highlight risks, avoid guarantees, and do not provide personalized financial advice.\n" +
+  "- Do not claim real-time market access; if asked for latest data, say it may be delayed and suggest verifying in live market sources or the TradeFlux dashboard.";
 
 const SCOPE_KEYWORDS = [
   "stock",
@@ -82,6 +116,53 @@ const SCOPE_KEYWORDS = [
   "engro",
   "pso",
   "pakistan state oil",
+  "prediction",
+  "predictions",
+  "forecast",
+  "forecasting",
+  "prophet",
+  "sentiment",
+  "agent",
+  "agents",
+  "llm",
+];
+
+const PROJECT_KEYWORDS = [
+  "tradeflux",
+  "trade flux",
+  "dashboard",
+  "ai predictions",
+  "ai prediction",
+  "stock analysis",
+  "chatbot",
+  "backtesting",
+  "visualizations",
+  "agent logs",
+  "about project",
+  "about",
+  "password",
+  "change password",
+  "profile",
+  "top right",
+  "navbar",
+  "sidebar",
+  "report",
+  "reports",
+  "csv",
+  "json",
+  "download",
+  "apple",
+  "aapl",
+  "29 day",
+  "29-day",
+  "29 days",
+  "who made",
+  "who created",
+  "made you",
+  "team",
+  "irfan",
+  "zainab",
+  "mohsin",
 ];
 
 const GREETING_KEYWORDS = [
@@ -94,20 +175,92 @@ const GREETING_KEYWORDS = [
   "what's your name",
   "whats your name",
   "who are you",
+  "who made you",
 ];
 
 const OUT_OF_SCOPE_MESSAGE =
-  "I can only help with stock market, trading, and market-news questions. " +
-  "Please ask about tickers, trends, signals, or market concepts.";
+  "I can help with TradeFlux app guidance, stock market questions, trading concepts, forecasts, reports, and market-news topics. " +
+  "Try asking about AI Predictions, changing your password, reading forecast graphs, tickers, trends, or indicators.";
 
 function isInScope(text: string) {
   const lower = text.toLowerCase();
-  return SCOPE_KEYWORDS.some((keyword) => lower.includes(keyword));
+  return (
+    SCOPE_KEYWORDS.some((keyword) => lower.includes(keyword)) ||
+    PROJECT_KEYWORDS.some((keyword) => lower.includes(keyword))
+  );
 }
 
 function isGreeting(text: string) {
   const lower = text.toLowerCase();
   return GREETING_KEYWORDS.some((keyword) => lower.includes(keyword));
+}
+
+function getTradeFluxAnswer(text: string) {
+  const lower = text.toLowerCase();
+
+  if (
+    lower.includes("who made") ||
+    lower.includes("made you") ||
+    lower.includes("who created") ||
+    lower.includes("team")
+  ) {
+    return TRADEFLUX_TEAM;
+  }
+
+  if (
+    (lower.includes("29") && (lower.includes("apple") || lower.includes("aapl"))) ||
+    (lower.includes("forecast") && (lower.includes("apple") || lower.includes("aapl")))
+  ) {
+    return [
+      "To view Apple's 29-day forecast in TradeFlux:",
+      "",
+      "1. Open **AI Predictions** from the left sidebar.",
+      "2. In **Stock Symbol**, select **AAPL** or Apple.",
+      "3. Set **Forecast Days** to **29**.",
+      "4. Click **Run Prediction**.",
+      "5. In **Price Forecast - AAPL**, inspect the graph and the final forecast point for the day-29 value.",
+      "",
+      "You can also review **AI Insight** below the chart for the model summary and risk notes.",
+    ].join("\n");
+  }
+
+  if (lower.includes("password")) {
+    return [
+      "To change your password in TradeFlux:",
+      "",
+      "1. Click your user profile area in the **top-right corner** of the navbar.",
+      "2. Choose **Change Password** from the dropdown.",
+      "3. Enter your **Current Password**.",
+      "4. Enter your **New Password**.",
+      "5. Re-enter it in **Confirm New Password**.",
+      "6. Click **Update Password**.",
+    ].join("\n");
+  }
+
+  if (lower.includes("download") || lower.includes("csv") || lower.includes("json") || lower.includes("report")) {
+    return [
+      "To download prediction reports in TradeFlux:",
+      "",
+      "1. Open **AI Predictions** from the sidebar.",
+      "2. Select an existing stock forecast or run a new prediction.",
+      "3. Use the **CSV** button to download spreadsheet-style data.",
+      "4. Use the **JSON** button to download structured forecast data.",
+    ].join("\n");
+  }
+
+  if (lower.includes("what is tradeflux") || lower.includes("about tradeflux") || lower.includes("tradeflux itself")) {
+    return [
+      "**TradeFlux** is an Agentic AI Stock Market Prediction System.",
+      "",
+      "It combines:",
+      "- A **Next.js** dashboard for stock analysis, predictions, charts, backtesting, and logs.",
+      "- **PostgreSQL** and **Prisma** for stored users, stocks, predictions, and agent logs.",
+      "- **Python agents** for market data, news, preprocessing, forecasting, and report generation.",
+      "- **Yahoo Finance**, **News API**, **Prophet forecasting**, sentiment analysis, and Groq/OpenAI LLM insights.",
+    ].join("\n");
+  }
+
+  return null;
 }
 
 export async function POST(request: NextRequest) {
@@ -142,6 +295,14 @@ export async function POST(request: NextRequest) {
     const lastUserMessage = [...trimmedMessages]
       .reverse()
       .find((msg) => msg.role === "user")?.content;
+
+    const localAnswer = lastUserMessage ? getTradeFluxAnswer(lastUserMessage) : null;
+    if (localAnswer) {
+      return NextResponse.json({
+        success: true,
+        data: { message: localAnswer },
+      });
+    }
 
     if (lastUserMessage && !isInScope(lastUserMessage) && !isGreeting(lastUserMessage)) {
       return NextResponse.json({

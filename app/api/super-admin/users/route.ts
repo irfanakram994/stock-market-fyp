@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createSuperAdminAuditLog, extractBearerToken, verifySuperAdminSession } from '@/lib/superAdminAuth';
 
+const BLOCKED_ACCOUNT_MESSAGE =
+  'Your account has been blocked. Please contact the TradeFlux team to resolve this matter, as this restriction may be related to policy violations on your account.';
+
 export async function GET(request: NextRequest) {
   try {
     const accessToken = extractBearerToken(request.headers.get('authorization'));
@@ -97,7 +100,7 @@ export async function PATCH(request: NextRequest) {
       data: {
         isBlocked: shouldBlock,
         blockedReason: shouldBlock
-          ? String(blockedReason || 'Account blocked by Super Admin.')
+          ? String(blockedReason || BLOCKED_ACCOUNT_MESSAGE)
           : null,
       },
     });

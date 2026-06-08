@@ -3,17 +3,16 @@ import { extractBearerToken, verifySuperAdminSession } from '@/lib/superAdminAut
 
 export async function POST(request: NextRequest) {
   try {
-    let email: string | undefined;
     const accessToken = extractBearerToken(request.headers.get('authorization'));
 
-    try {
-      const body = await request.json();
-      email = body?.email;
-    } catch {
-      email = undefined;
+    if (!accessToken) {
+      return NextResponse.json(
+        { success: false, message: 'Not authenticated' },
+        { status: 401 }
+      );
     }
 
-    const result = await verifySuperAdminSession({ email, accessToken });
+    const result = await verifySuperAdminSession({ accessToken });
     return NextResponse.json(result, { status: result.success ? 200 : 401 });
   } catch (error) {
     return NextResponse.json(

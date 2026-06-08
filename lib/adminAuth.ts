@@ -143,7 +143,14 @@ export async function verifyAdminSession(
   try {
     let resolvedEmail = options.email;
 
-    if (!resolvedEmail && options.accessToken) {
+    if (!options.accessToken) {
+      return {
+        success: false,
+        message: 'Not authenticated',
+      };
+    }
+
+    if (options.accessToken) {
       const { data, error } = await supabaseServer.auth.getUser(options.accessToken);
       if (error) {
         return {
@@ -153,7 +160,22 @@ export async function verifyAdminSession(
         };
       }
 
-      resolvedEmail = data.user?.email;
+      const tokenEmail = data.user?.email;
+      if (!tokenEmail) {
+        return {
+          success: false,
+          message: 'Not authenticated',
+        };
+      }
+
+      if (resolvedEmail && resolvedEmail !== tokenEmail) {
+        return {
+          success: false,
+          message: 'Session email mismatch',
+        };
+      }
+
+      resolvedEmail = tokenEmail;
     }
 
     if (!resolvedEmail) {

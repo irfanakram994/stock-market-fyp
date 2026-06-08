@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import { prisma } from '@/lib/prisma';
 import { supabaseServer } from '@/lib/supabaseClient';
 
+const BLOCKED_ACCOUNT_MESSAGE =
+  'Your account has been blocked. Please contact the TradeFlux team to resolve this matter, as this restriction may be related to policy violations on your account.';
+
 function extractBearerToken(authorizationHeader: string | null): string | undefined {
   if (!authorizationHeader) return undefined;
   const [scheme, token] = authorizationHeader.split(' ');
@@ -118,7 +121,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: user.blockedReason || 'This account has been blocked. Contact support for help.',
+          error: BLOCKED_ACCOUNT_MESSAGE,
           code: 'USER_BLOCKED',
         },
         { status: 403 }

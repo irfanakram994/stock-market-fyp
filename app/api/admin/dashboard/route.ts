@@ -8,8 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const accessToken = extractBearerToken(request.headers.get('authorization'));
-    const adminEmail = request.nextUrl.searchParams.get('adminEmail') || undefined;
-    const session = await verifyAdminSession({ email: adminEmail, accessToken });
+    const session = await verifyAdminSession({ accessToken });
     if (!session.success) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
