@@ -44,11 +44,11 @@ export default function Sidebar() {
                 {!collapsed && (
                     <div className="flex items-center space-x-3">
                         <Image
-                            src="/tradeflux-logo.png"
+                            src="/logo-only-no-text.png"
                             alt="TradeFlux"
-                            width={110}
-                            height={36}
-                            className="object-contain"
+                            width={42}
+                            height={42}
+                            className="h-10 w-10 object-contain"
                         />
                         <div className="flex flex-col leading-tight">
                             <span className="gradient-text text-lg font-semibold">TradeFlux</span>
@@ -58,11 +58,11 @@ export default function Sidebar() {
                 )}
                 {collapsed && (
                     <Image
-                        src="/tradeflux-logo.png"
+                        src="/logo-only-no-text.png"
                         alt="TradeFlux"
-                        width={28}
-                        height={28}
-                        className="object-contain mx-auto"
+                        width={36}
+                        height={36}
+                        className="mx-auto h-9 w-9 object-contain"
                     />
                 )}
             </div>

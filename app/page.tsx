@@ -1,21 +1,133 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
-    ArrowRight, TrendingUp, Brain, BarChart3, Sparkles,
-    Shield, Activity, Zap, ChevronRight, Star
+    Activity,
+    ArrowRight,
+    ArrowUpRight,
+    Bot,
+    Brain,
+    CandlestickChart,
+    ChevronRight,
+    Database,
+    FlaskConical,
+    Gauge,
+    LineChart,
+    Newspaper,
+    PieChart,
+    Shield,
+    TrendingUp,
+    Users,
+    Workflow,
 } from 'lucide-react';
 import AuthModal from '@/components/AuthModal';
-import Image from 'next/image';
 import { useAuth } from '@/lib/authContext';
 import { resolveCurrentRole } from '@/lib/roleRouting';
+
+const marketTickers = [
+    { symbol: 'AAPL', value: '$214.32', change: '+1.8%' },
+    { symbol: 'MSFT', value: '$468.14', change: '+0.9%' },
+    { symbol: 'NVDA', value: '$142.76', change: '+2.4%' },
+    { symbol: 'TSLA', value: '$186.90', change: '-0.7%' },
+    { symbol: 'AMZN', value: '$183.22', change: '+1.1%' },
+];
+
+const platformFeatures = [
+    {
+        icon: Brain,
+        title: 'AI Predictions',
+        description: 'Run Prophet-backed forecasts with trend direction, confidence, and LLM summaries.',
+        accent: 'text-sky-300',
+        soft: 'bg-sky-400/10',
+        border: 'border-sky-300/20',
+    },
+    {
+        icon: CandlestickChart,
+        title: 'Stock Analysis',
+        description: 'Inspect live market context, price history, and technical indicator snapshots.',
+        accent: 'text-emerald-300',
+        soft: 'bg-emerald-400/10',
+        border: 'border-emerald-300/20',
+    },
+    {
+        icon: FlaskConical,
+        title: 'Backtesting',
+        description: 'Validate strategies against historical candles before trusting a new idea.',
+        accent: 'text-violet-300',
+        soft: 'bg-violet-400/10',
+        border: 'border-violet-300/20',
+    },
+    {
+        icon: Newspaper,
+        title: 'News Sentiment',
+        description: 'Blend market news, VADER sentiment, and AI explanation into readable signals.',
+        accent: 'text-amber-300',
+        soft: 'bg-amber-400/10',
+        border: 'border-amber-300/20',
+    },
+    {
+        icon: PieChart,
+        title: 'Visualizations',
+        description: 'Move from raw forecasts into charts that are easier to compare and explain.',
+        accent: 'text-cyan-300',
+        soft: 'bg-cyan-400/10',
+        border: 'border-cyan-300/20',
+    },
+    {
+        icon: Bot,
+        title: 'Agent Logs',
+        description: 'Review agent execution records so the workflow stays transparent and debuggable.',
+        accent: 'text-rose-300',
+        soft: 'bg-rose-400/10',
+        border: 'border-rose-300/20',
+    },
+];
+
+const workflowSteps = [
+    {
+        icon: LineChart,
+        label: 'Choose a stock',
+        description: 'Search a symbol and pull the latest market context into the workspace.',
+    },
+    {
+        icon: Brain,
+        label: 'Run AI forecast',
+        description: 'Forecasting agents prepare price projections, confidence, and trend notes.',
+    },
+    {
+        icon: Newspaper,
+        label: 'Read the signal',
+        description: 'News sentiment and AI summaries add context around the prediction.',
+    },
+    {
+        icon: Shield,
+        label: 'Validate decision',
+        description: 'Backtesting and visualizations help compare risk before acting.',
+    },
+];
+
+const systemPillars = [
+    { label: 'Forecasting core', value: 'Prophet', icon: Gauge },
+    { label: 'Market data', value: 'Yahoo Finance', icon: Database },
+    { label: 'News layer', value: 'Sentiment AI', icon: Newspaper },
+    { label: 'Transparency', value: 'Agent logs', icon: Activity },
+];
+
+const teamMembers = [
+    { name: 'Irfan Ali', rollNo: '22011519-029' },
+    { name: 'Zainab Mazhar', rollNo: '22011519-043' },
+    { name: 'Syed Mohsin Taseer Naqvi', rollNo: '22011519-067' },
+];
 
 export default function LandingPage() {
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [redirectResolved, setRedirectResolved] = useState(false);
     const router = useRouter();
     const { user, loading } = useAuth();
+
+    const openAuthModal = () => setShowAuthModal(true);
 
     const navigateToResolvedDashboard = async () => {
         const roleResult = await resolveCurrentRole();
@@ -24,7 +136,6 @@ export default function LandingPage() {
         }
     };
 
-    // Redirect to the right panel when the logged-in account is already authenticated
     useEffect(() => {
         if (loading) return;
         if (!user) {
@@ -41,7 +152,7 @@ export default function LandingPage() {
             setRedirectResolved(true);
         };
 
-        redirectBasedOnRole();
+        void redirectBasedOnRole();
     }, [user, loading, redirectResolved, router]);
 
     const handleAuthSuccess = () => {
@@ -50,90 +161,60 @@ export default function LandingPage() {
 
     return (
         <>
-            <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #060b17 0%, #0a1628 40%, #0d1f3c 70%, #060b17 100%)' }}>
+            <main className="landing-shell min-h-screen overflow-hidden bg-slate-950 text-slate-100">
+                <nav className="sticky top-0 z-50 border-b border-sky-100/10 bg-slate-950/72 backdrop-blur-xl">
+                    <div className="mx-auto flex h-20 w-full max-w-[1500px] items-center justify-between gap-4 px-3 sm:px-5 lg:px-6">
+                        <a href="#top" className="flex min-w-0 items-center gap-3" aria-label="TradeFlux home">
+                            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl border border-sky-300/25 bg-sky-300/10 shadow-lg shadow-sky-950/20 sm:h-16 sm:w-16">
+                                <Image
+                                    src="/logo-only-no-text.png"
+                                    alt="TradeFlux"
+                                    width={58}
+                                    height={58}
+                                    priority
+                                    className="h-12 w-12 object-contain sm:h-14 sm:w-14"
+                                />
+                            </span>
+                            <span className="min-w-0 leading-tight">
+                                <span className="block text-lg font-semibold text-white sm:text-xl">TradeFlux</span>
+                                <span className="hidden text-xs font-medium text-sky-100/70 md:block">
+                                    Agentic AI Market Forecasting System
+                                </span>
+                            </span>
+                        </a>
 
-                {/* Sticky Glassmorphism Navbar */}
-                <nav style={{
-                    position: 'sticky',
-                    top: 0,
-                    zIndex: 50,
-                    background: 'rgba(6, 11, 23, 0.85)',
-                    backdropFilter: 'blur(16px)',
-                    WebkitBackdropFilter: 'blur(16px)',
-                    borderBottom: '1px solid rgba(14, 165, 233, 0.12)',
-                }}>
-                    <div className="max-w-7xl mx-auto px-6 h-14 flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <Image
-                                src="/tradeflux-logo.png"
-                                alt="TradeFlux"
-                                width={140}
-                                height={44}
-                                className="object-contain"
-                                style={{ mixBlendMode: 'screen', filter: 'brightness(1.05)' }}
-                            />
-                            <div className="flex flex-col leading-tight">
-                                <span className="gradient-text text-lg font-semibold">TradeFlux</span>
-                                <span className="text-xs text-gray-400 -mt-0.5">Market Forecasting with Agentic AI</span>
-                            </div>
+                        <div className="hidden items-center gap-6 text-sm font-medium text-slate-300/80 lg:flex">
+                            <a href="#features" className="transition hover:text-white">Features</a>
+                            <a href="#workflow" className="transition hover:text-white">Workflow</a>
+                            <a href="#system" className="transition hover:text-white">System</a>
                         </div>
-                        <div className="flex items-center gap-3">
+
+                        <div className="flex items-center gap-2 sm:gap-3">
                             {!loading && user ? (
-                                <>
-                                    <button
-                                        onClick={navigateToResolvedDashboard}
-                                        style={{
-                                            background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)',
-                                            color: 'white',
-                                            padding: '0.4rem 1rem',
-                                            borderRadius: '8px',
-                                            fontWeight: 600,
-                                            cursor: 'pointer',
-                                            border: 'none',
-                                            fontSize: '0.88rem',
-                                            transition: 'all 0.18s',
-                                            boxShadow: '0 6px 18px rgba(14, 165, 233, 0.28)',
-                                        }}
-                                    >
-                                        Dashboard
-                                    </button>
-                                </>
+                                <button
+                                    type="button"
+                                    onClick={navigateToResolvedDashboard}
+                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-sky-500 px-4 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:-translate-y-0.5 hover:bg-sky-400"
+                                >
+                                    Dashboard
+                                    <ArrowUpRight className="h-4 w-4" />
+                                </button>
                             ) : (
                                 <>
                                     <button
-                                        onClick={() => setShowAuthModal(true)}
-                                        style={{
-                                            background: 'transparent',
-                                            border: '1px solid rgba(14,165,233,0.35)',
-                                            color: '#cbd5e1',
-                                            padding: '0.35rem 0.9rem',
-                                            borderRadius: '8px',
-                                            fontWeight: 500,
-                                            cursor: 'pointer',
-                                            transition: 'all 0.18s',
-                                            fontSize: '0.85rem',
-                                        }}
-                                        onMouseEnter={e => { (e.target as HTMLElement).style.color = '#e2e8f0'; (e.target as HTMLElement).style.borderColor = 'rgba(14,165,233,0.65)'; }}
-                                        onMouseLeave={e => { (e.target as HTMLElement).style.color = '#cbd5e1'; (e.target as HTMLElement).style.borderColor = 'rgba(14,165,233,0.35)'; }}
+                                        type="button"
+                                        onClick={openAuthModal}
+                                        className="hidden h-10 items-center justify-center rounded-lg border border-sky-200/15 bg-white/[0.03] px-4 text-sm font-semibold text-slate-200 transition hover:border-sky-300/45 hover:bg-sky-400/10 hover:text-white sm:inline-flex"
                                     >
                                         Sign In
                                     </button>
                                     <button
-                                        onClick={() => setShowAuthModal(true)}
-                                        style={{
-                                            background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)',
-                                            color: 'white',
-                                            padding: '0.4rem 1rem',
-                                            borderRadius: '8px',
-                                            fontWeight: 600,
-                                            cursor: 'pointer',
-                                            border: 'none',
-                                            fontSize: '0.88rem',
-                                            transition: 'all 0.18s',
-                                            boxShadow: '0 6px 18px rgba(14, 165, 233, 0.28)',
-                                        }}
+                                        type="button"
+                                        onClick={openAuthModal}
+                                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-sky-500 px-4 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:-translate-y-0.5 hover:bg-sky-400"
                                     >
                                         Get Started
+                                        <ArrowRight className="h-4 w-4" />
                                     </button>
                                 </>
                             )}
@@ -141,337 +222,344 @@ export default function LandingPage() {
                     </div>
                 </nav>
 
-                {/* Hero Section */}
-                <div style={{ position: 'relative', overflow: 'hidden', minHeight: '90vh', display: 'flex', alignItems: 'center' }}>
-                    {/* Animated Orbs */}
-                    <div style={{
-                        position: 'absolute', top: '-10%', left: '-5%',
-                        width: '500px', height: '500px',
-                        background: 'radial-gradient(circle, rgba(14,165,233,0.12) 0%, transparent 70%)',
-                        borderRadius: '50%', animation: 'pulse 6s ease-in-out infinite',
-                    }} />
-                    <div style={{
-                        position: 'absolute', bottom: '-10%', right: '-5%',
-                        width: '600px', height: '600px',
-                        background: 'radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 70%)',
-                        borderRadius: '50%', animation: 'pulse 8s ease-in-out infinite 2s',
-                    }} />
-                    {/* Grid pattern */}
-                    <div style={{
-                        position: 'absolute', inset: 0,
-                        backgroundImage: 'linear-gradient(rgba(14,165,233,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(14,165,233,0.03) 1px, transparent 1px)',
-                        backgroundSize: '60px 60px',
-                    }} />
+                <section id="top" className="relative">
+                    <div className="landing-grid-bg absolute inset-0" />
+                    <div className="landing-ambient landing-ambient-one" />
+                    <div className="landing-ambient landing-ambient-two" />
 
-                    <div className="max-w-7xl mx-auto px-6 py-20 w-full" style={{ position: 'relative', zIndex: 10 }}>
-                        <div className="grid lg:grid-cols-2 gap-16 items-center">
-                            {/* Left */}
-                            <div style={{ animation: 'slideUp 0.8s ease-out' }}>
-                                {/* Badge */}
-                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem' }}>
-                                    <span style={{
-                                        padding: '0.4rem 1rem',
-                                        background: 'rgba(14,165,233,0.1)',
-                                        border: '1px solid rgba(14,165,233,0.3)',
-                                        borderRadius: '100px',
-                                        fontSize: '0.8rem',
-                                        color: '#38bdf8',
-                                        fontWeight: 600,
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '6px',
-                                    }}>
-                                        <Sparkles style={{ width: '14px', height: '14px' }} />
-                                        Powered by Multi-Agent AI
-                                    </span>
-                                </div>
-
-                                <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 800, lineHeight: 1.1, marginBottom: '1.5rem', letterSpacing: '-0.02em' }}>
-                                    Predict Stock Markets
-                                    <br />
-                                    with{' '}
-                                    <span style={{
-                                        background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)',
-                                        WebkitBackgroundClip: 'text',
-                                        WebkitTextFillColor: 'transparent',
-                                        backgroundClip: 'text',
-                                    }}>
-                                        AI Precision
-                                    </span>
-                                </h1>
-
-                                <p style={{ fontSize: '1.1rem', color: '#94a3b8', lineHeight: 1.7, marginBottom: '2rem', maxWidth: '500px' }}>
-                                    Harness multi-agent AI, Prophet forecasting, and real-time sentiment analysis to make smarter, data-driven trading decisions.
-                                </p>
-
-                                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '3rem' }}>
-                                    <button
-                                        onClick={() => setShowAuthModal(true)}
-                                        style={{
-                                            background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)',
-                                            color: 'white',
-                                            padding: '0.85rem 2rem',
-                                            borderRadius: '10px',
-                                            fontWeight: 700,
-                                            cursor: 'pointer',
-                                            border: 'none',
-                                            fontSize: '1rem',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '8px',
-                                            boxShadow: '0 8px 25px rgba(14,165,233,0.4)',
-                                            transition: 'all 0.2s',
-                                        }}
-                                    >
-                                        Try Now <ArrowRight style={{ width: '18px', height: '18px' }} />
-                                    </button>
-                                    <button
-                                        style={{
-                                            background: 'rgba(30,41,59,0.6)',
-                                            color: '#e2e8f0',
-                                            padding: '0.85rem 2rem',
-                                            borderRadius: '10px',
-                                            fontWeight: 600,
-                                            cursor: 'pointer',
-                                            border: '1px solid rgba(51,65,85,0.8)',
-                                            fontSize: '1rem',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '8px',
-                                        }}
-                                    >
-                                        Learn More <ChevronRight style={{ width: '18px', height: '18px' }} />
-                                    </button>
-                                </div>
-
-                                {/* Stats Row */}
-                                <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-                                    {[
-                                        { val: '7', label: 'AI Agents', color: '#0ea5e9' },
-                                        { val: '95%', label: 'Accuracy', color: '#6366f1' },
-                                        { val: '24/7', label: 'Monitoring', color: '#10b981' },
-                                    ].map(stat => (
-                                        <div key={stat.label}>
-                                            <div style={{ fontSize: '2rem', fontWeight: 800, color: stat.color, lineHeight: 1 }}>{stat.val}</div>
-                                            <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px', fontWeight: 500 }}>{stat.label}</div>
-                                        </div>
-                                    ))}
+                    <div className="relative mx-auto grid min-h-[calc(100vh-5rem)] w-full max-w-[1500px] items-end gap-8 px-3 py-10 sm:px-5 lg:grid-cols-2 lg:px-6 lg:py-12">
+                        <div className="landing-reveal flex h-full flex-col justify-end pb-1">
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-sky-300/25 bg-sky-300/10 px-3 py-1.5 text-sm font-semibold text-sky-50">
+                                    
+                                    <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,0.9)]" />
+                                    Live AI trading workspace
                                 </div>
                             </div>
 
-                            {/* Right - Feature Cards */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', animation: 'fadeIn 1s ease-out 0.3s both' }}>
+                            <h1 className="mt-6 max-w-4xl text-4xl font-semibold leading-[1.05] tracking-normal text-white sm:text-5xl lg:text-[3.45rem]">
+                                Forecast stocks with an AI system built for daily market decisions.
+                            </h1>
+                            <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
+                                TradeFlux brings forecasts, news sentiment, strategy testing, agent logs, and visual analytics into one focused dashboard for stock-market research.
+                            </p>
+
+                            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                                <button
+                                    type="button"
+                                    onClick={openAuthModal}
+                                    className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-white px-5 text-sm font-bold text-slate-950 shadow-2xl shadow-sky-950/30 transition hover:-translate-y-0.5 hover:bg-sky-50"
+                                >
+                                    Open TradeFlux
+                                    <ArrowRight className="h-4 w-4" />
+                                </button>
+                                <a
+                                    href="#features"
+                                    className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-white/[0.12] bg-white/5 px-5 text-sm font-semibold text-white transition hover:border-sky-300/35 hover:bg-sky-400/10"
+                                >
+                                    Explore Features
+                                    <ChevronRight className="h-4 w-4" />
+                                </a>
+                            </div>
+
+                            <div className="mt-8 grid w-full grid-cols-3 gap-3">
                                 {[
-                                    {
-                                        icon: <TrendingUp style={{ width: '22px', height: '22px' }} />,
-                                        title: 'AI-Powered Predictions',
-                                        desc: 'Prophet-based forecasting with confidence intervals and trend analysis',
-                                        gradient: 'linear-gradient(135deg, #0ea5e9, #38bdf8)',
-                                        glow: 'rgba(14,165,233,0.2)',
-                                    },
-                                    {
-                                        icon: <Brain style={{ width: '22px', height: '22px' }} />,
-                                        title: 'Sentiment Analysis',
-                                        desc: 'Real-time news sentiment using VADER and Groq LLM insights',
-                                        gradient: 'linear-gradient(135deg, #6366f1, #a78bfa)',
-                                        glow: 'rgba(99,102,241,0.2)',
-                                    },
-                                    {
-                                        icon: <BarChart3 style={{ width: '22px', height: '22px' }} />,
-                                        title: 'Advanced Analytics',
-                                        desc: 'RSI, MACD, Bollinger Bands, and custom performance metrics',
-                                        gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-                                        glow: 'rgba(245,158,11,0.2)',
-                                    },
-                                ].map(card => (
-                                    <div key={card.title} style={{
-                                        background: 'rgba(15, 23, 42, 0.7)',
-                                        border: '1px solid rgba(51,65,85,0.6)',
-                                        borderRadius: '16px',
-                                        padding: '1.25rem 1.5rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '1rem',
-                                        backdropFilter: 'blur(10px)',
-                                        transition: 'all 0.3s',
-                                        cursor: 'default',
-                                    }}
-                                        onMouseEnter={e => {
-                                            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(14,165,233,0.4)';
-                                            (e.currentTarget as HTMLElement).style.transform = 'translateX(6px)';
-                                            (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 30px ${card.glow}`;
-                                        }}
-                                        onMouseLeave={e => {
-                                            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(51,65,85,0.6)';
-                                            (e.currentTarget as HTMLElement).style.transform = 'translateX(0)';
-                                            (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                                        }}
-                                    >
-                                        <div style={{
-                                            width: '48px', height: '48px', borderRadius: '12px',
-                                            background: card.gradient, display: 'flex', alignItems: 'center',
-                                            justifyContent: 'center', color: 'white', flexShrink: 0,
-                                            boxShadow: `0 4px 15px ${card.glow}`,
-                                        }}>
-                                            {card.icon}
-                                        </div>
-                                        <div>
-                                            <div style={{ fontWeight: 700, color: '#f1f5f9', marginBottom: '4px' }}>{card.title}</div>
-                                            <div style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5 }}>{card.desc}</div>
-                                        </div>
+                                    { value: '7', label: 'AI agents' },
+                                    { value: '29d', label: 'Forecast view' },
+                                    { value: '24/7', label: 'Market context' },
+                                ].map((stat) => (
+                                    <div key={stat.label} className="rounded-lg border border-sky-100/10 bg-white/[0.055] p-3.5 shadow-lg shadow-sky-950/10">
+                                        <p className="text-2xl font-semibold text-white">{stat.value}</p>
+                                        <p className="mt-1 text-xs font-medium text-slate-400">{stat.label}</p>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                {/* Features Grid Section */}
-                <div style={{ padding: '5rem 1.5rem', position: 'relative' }}>
-                    <div style={{
-                        position: 'absolute', top: 0, left: 0, right: 0,
-                        height: '1px',
-                        background: 'linear-gradient(90deg, transparent, rgba(14,165,233,0.3), transparent)',
-                    }} />
-                    <div className="max-w-7xl mx-auto">
-                        <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
-                            <p style={{ color: '#38bdf8', fontWeight: 600, fontSize: '0.85rem', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-                                Everything You Need
-                            </p>
-                            <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', fontWeight: 800, marginBottom: '1rem', letterSpacing: '-0.02em' }}>
-                                Complete <span style={{
-                                    background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)',
-                                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'
-                                }}>AI Trading Suite</span>
-                            </h2>
-                            <p style={{ color: '#64748b', fontSize: '1rem', maxWidth: '500px', margin: '0 auto' }}>
-                                Everything you need to make data-driven investment decisions
-                            </p>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
-                            {[
-                                { icon: <Brain style={{ width: '24px', height: '24px' }} />, title: 'Multi-Agent System', desc: '7 specialized AI agents working in perfect harmony', color: '#0ea5e9' },
-                                { icon: <Activity style={{ width: '24px', height: '24px' }} />, title: 'Prophet Forecasting', desc: 'Industry-leading time series prediction models', color: '#6366f1' },
-                                { icon: <Zap style={{ width: '24px', height: '24px' }} />, title: 'News Integration', desc: 'Real-time news pipelines from trusted sources', color: '#f59e0b' },
-                                { icon: <Sparkles style={{ width: '24px', height: '24px' }} />, title: 'Sentiment Analysis', desc: 'VADER + Groq LLM-powered market insights', color: '#a78bfa' },
-                                { icon: <Shield style={{ width: '24px', height: '24px' }} />, title: 'Backtesting Engine', desc: 'Validate trading strategies with historical data', color: '#10b981' },
-                                { icon: <TrendingUp style={{ width: '24px', height: '24px' }} />, title: 'Real-time Data', desc: 'Live market data streamed from Yahoo Finance', color: '#f43f5e' },
-                            ].map(feat => (
-                                <div key={feat.title} style={{
-                                    background: 'rgba(15,23,42,0.5)',
-                                    border: '1px solid rgba(51,65,85,0.5)',
-                                    borderRadius: '16px',
-                                    padding: '1.75rem',
-                                    transition: 'all 0.3s',
-                                    cursor: 'default',
-                                }}
-                                    onMouseEnter={e => {
-                                        (e.currentTarget as HTMLElement).style.borderColor = `${feat.color}40`;
-                                        (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
-                                        (e.currentTarget as HTMLElement).style.boxShadow = `0 12px 40px ${feat.color}20`;
-                                    }}
-                                    onMouseLeave={e => {
-                                        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(51,65,85,0.5)';
-                                        (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-                                        (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                                    }}
-                                >
-                                    <div style={{
-                                        width: '44px', height: '44px', borderRadius: '10px',
-                                        background: `${feat.color}18`, border: `1px solid ${feat.color}30`,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        color: feat.color, marginBottom: '1rem',
-                                    }}>
-                                        {feat.icon}
+                        <div className="landing-reveal landing-reveal-delay">
+                            <div className="landing-dashboard-panel relative mx-auto w-full overflow-hidden rounded-xl border border-sky-100/[0.14] bg-slate-900/[0.64] p-3 shadow-2xl shadow-sky-950/30 backdrop-blur-xl sm:p-3.5">
+                                <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase text-sky-200">Forecast cockpit</p>
+                                        <h2 className="mt-1 text-base font-semibold text-white">AAPL AI Prediction</h2>
                                     </div>
-                                    <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.5rem', color: '#f1f5f9' }}>{feat.title}</h3>
-                                    <p style={{ fontSize: '0.875rem', color: '#64748b', lineHeight: 1.6 }}>{feat.desc}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Testimonial / Social Proof */}
-                <div style={{ padding: '4rem 1.5rem' }}>
-                    <div className="max-w-7xl mx-auto">
-                        <div style={{
-                            background: 'linear-gradient(135deg, rgba(14,165,233,0.08) 0%, rgba(99,102,241,0.08) 100%)',
-                            border: '1px solid rgba(14,165,233,0.2)',
-                            borderRadius: '24px',
-                            padding: 'clamp(2rem, 5vw, 4rem)',
-                            textAlign: 'center',
-                            position: 'relative',
-                            overflow: 'hidden',
-                        }}>
-                            <div style={{
-                                position: 'absolute', top: '-50%', left: '50%', transform: 'translateX(-50%)',
-                                width: '400px', height: '400px',
-                                background: 'radial-gradient(circle, rgba(14,165,233,0.08) 0%, transparent 70%)',
-                                borderRadius: '50%',
-                            }} />
-                            <div style={{ position: 'relative', zIndex: 1 }}>
-                                <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', marginBottom: '1.5rem' }}>
-                                    {[...Array(5)].map((_, i) => (
-                                        <Star key={i} style={{ width: '20px', height: '20px', fill: '#f59e0b', color: '#f59e0b' }} />
-                                    ))}
-                                </div>
-                                <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', fontWeight: 800, marginBottom: '1rem', letterSpacing: '-0.02em' }}>
-                                    Ready to Transform
-                                    <br />
-                                    <span style={{
-                                        background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)',
-                                        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'
-                                    }}>
-                                        Your Trading?
+                                    <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-100">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                                        Agents online
                                     </span>
-                                </h2>
-                                <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '2rem', maxWidth: '460px', margin: '0 auto 2rem' }}>
-                                    Join thousands of traders using AI-powered insights to gain a real edge in the market.
-                                </p>
-                                <button
-                                    onClick={() => setShowAuthModal(true)}
-                                    style={{
-                                        background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)',
-                                        color: 'white',
-                                        padding: '1rem 2.5rem',
-                                        borderRadius: '12px',
-                                        fontWeight: 700,
-                                        cursor: 'pointer',
-                                        border: 'none',
-                                        fontSize: '1rem',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        boxShadow: '0 10px 35px rgba(14,165,233,0.4)',
-                                        transition: 'all 0.2s',
-                                    }}
-                                >
-                                    Get Started Now <ArrowRight style={{ width: '18px', height: '18px' }} />
-                                </button>
+                                </div>
+
+                                <div className="grid gap-3 lg:grid-cols-[1.08fr_0.92fr]">
+                                    <div className="rounded-lg border border-sky-100/10 bg-slate-950/52 p-3">
+                                        <div className="mb-3 flex items-center justify-between gap-3">
+                                            <div>
+                                                <p className="text-sm text-slate-400">Predicted trend</p>
+                                                <p className="mt-1 text-xl font-semibold text-emerald-300">Bullish +4.6%</p>
+                                            </div>
+                                            <div className="rounded-lg bg-emerald-400/10 p-3 text-emerald-300">
+                                                <TrendingUp className="h-5 w-5" />
+                                            </div>
+                                        </div>
+
+                                        <div className="landing-chart h-32 rounded-lg border border-white/[0.08] bg-slate-950/60 p-3 sm:h-36">
+                                            <svg viewBox="0 0 520 230" preserveAspectRatio="none" className="h-full w-full" aria-hidden="true">
+                                                <defs>
+                                                    <linearGradient id="chartGlow" x1="0" x2="1" y1="0" y2="0">
+                                                        <stop offset="0%" stopColor="#38bdf8" />
+                                                        <stop offset="55%" stopColor="#22c55e" />
+                                                        <stop offset="100%" stopColor="#a78bfa" />
+                                                    </linearGradient>
+                                                </defs>
+                                                {[42, 88, 134, 180].map((y) => (
+                                                    <line key={y} x1="0" x2="520" y1={y} y2={y} stroke="rgba(148,163,184,0.12)" />
+                                                ))}
+                                                <path
+                                                    className="landing-chart-area"
+                                                    d="M0 172 C52 154 83 176 130 142 C171 112 200 136 246 102 C290 70 330 96 374 74 C430 44 474 66 520 34 L520 230 L0 230 Z"
+                                                    fill="rgba(56,189,248,0.10)"
+                                                />
+                                                <path
+                                                    className="landing-chart-line"
+                                                    d="M0 172 C52 154 83 176 130 142 C171 112 200 136 246 102 C290 70 330 96 374 74 C430 44 474 66 520 34"
+                                                    fill="none"
+                                                    stroke="url(#chartGlow)"
+                                                    strokeLinecap="round"
+                                                    strokeWidth="5"
+                                                />
+                                            </svg>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-3">
+                                        {[
+                                            { label: 'Confidence', value: '82%', icon: Gauge, tone: 'text-sky-300' },
+                                            { label: 'News mood', value: 'Positive', icon: Newspaper, tone: 'text-emerald-300' },
+                                            { label: 'Backtest', value: 'Ready', icon: FlaskConical, tone: 'text-violet-300' },
+                                        ].map((item) => {
+                                            const Icon = item.icon;
+                                            return (
+                                                <div key={item.label} className="landing-metric-card rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <div>
+                                                            <p className="text-xs font-medium text-slate-400">{item.label}</p>
+                                                            <p className="mt-1 text-base font-semibold text-white">{item.value}</p>
+                                                        </div>
+                                                        <Icon className={`h-5 w-5 ${item.tone}`} />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div className="landing-ticker mt-3 overflow-hidden rounded-full border border-white/10 bg-white/[0.04]">
+                                    <div className="landing-ticker-track">
+                                        {[...marketTickers, ...marketTickers].map((ticker, index) => (
+                                            <span key={`${ticker.symbol}-${index}`} className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-slate-200">
+                                                {ticker.symbol}
+                                                <span className="text-slate-400">{ticker.value}</span>
+                                                <span className={ticker.change.startsWith('+') ? 'text-emerald-300' : 'text-red-300'}>
+                                                    {ticker.change}
+                                                </span>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                {/* Footer */}
-                <footer style={{ borderTop: '1px solid rgba(51,65,85,0.4)', padding: '2rem 1.5rem' }}>
-                    <div className="max-w-7xl mx-auto" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                        <Image
-                            src="/tradeflux-logo.png"
-                            alt="TradeFlux"
-                            width={130}
-                            height={44}
-                            className="object-contain"
-                            style={{ mixBlendMode: 'screen', filter: 'brightness(1.1)' }}
-                        />
-                        <p style={{ color: '#475569', fontSize: '0.85rem' }}>
-                            © 2026 TradeFlux. Built for FYP with ❤️
+                <section id="features" className="relative mx-auto w-full max-w-[1500px] px-3 py-16 sm:px-5 lg:px-6">
+                    <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+                        <div>
+                            <p className="text-sm font-semibold uppercase text-sky-300">TradeFlux platform</p>
+                            <h2 className="mt-3 max-w-3xl text-3xl font-semibold tracking-normal text-white sm:text-4xl">
+                                A complete stock research workspace, not just a prediction screen.
+                            </h2>
+                        </div>
+                        <p className="max-w-md text-sm leading-6 text-slate-400">
+                            Every module maps to a real dashboard capability, from AI forecasts to backtesting and agent observability.
                         </p>
                     </div>
+
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {platformFeatures.map((feature) => {
+                            const Icon = feature.icon;
+                            return (
+                                <article
+                                    key={feature.title}
+                                    className="landing-feature-card group rounded-xl border border-sky-100/10 bg-white/[0.045] p-5 transition hover:-translate-y-1 hover:border-sky-300/35 hover:bg-white/[0.065] hover:shadow-2xl hover:shadow-sky-950/20"
+                                >
+                                    <div className={`mb-5 flex h-11 w-11 items-center justify-center rounded-lg border ${feature.border} ${feature.soft} ${feature.accent}`}>
+                                        <Icon className="h-5 w-5" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-white">{feature.title}</h3>
+                                    <p className="mt-3 text-sm leading-6 text-slate-400">{feature.description}</p>
+                                    <div className="mt-5 inline-flex items-center gap-2 text-xs font-semibold text-slate-300 transition group-hover:text-sky-200">
+                                        View in dashboard
+                                        <ArrowRight className="h-3.5 w-3.5" />
+                                    </div>
+                                </article>
+                            );
+                        })}
+                    </div>
+                </section>
+
+                <section id="workflow" className="mx-auto w-full max-w-[1500px] px-3 py-16 sm:px-5 lg:px-6">
+                    <div className="rounded-2xl border border-sky-100/10 bg-slate-900/50 p-5 shadow-2xl shadow-sky-950/20 sm:p-7">
+                        <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
+                            <div>
+                                <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-200">
+                                    <Workflow className="h-6 w-6" />
+                                </div>
+                                <p className="text-sm font-semibold uppercase text-cyan-300">Research flow</p>
+                                <h2 className="mt-3 text-3xl font-semibold tracking-normal text-white sm:text-4xl">
+                                    Move from market question to supported decision.
+                                </h2>
+                                <p className="mt-5 text-sm leading-7 text-slate-400">
+                                    The landing page now explains the actual TradeFlux journey: select a stock, run an AI forecast, compare market context, then validate with tools before making a decision.
+                                </p>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                {workflowSteps.map((step, index) => {
+                                    const Icon = step.icon;
+                                    return (
+                                        <div key={step.label} className="landing-step-card rounded-xl border border-sky-100/10 bg-slate-950/48 p-4">
+                                            <div className="mb-4 flex items-center justify-between gap-3">
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.06] text-sky-200">
+                                                    <Icon className="h-5 w-5" />
+                                                </div>
+                                                <span className="text-xs font-bold text-slate-500">0{index + 1}</span>
+                                            </div>
+                                            <h3 className="font-semibold text-white">{step.label}</h3>
+                                            <p className="mt-2 text-sm leading-6 text-slate-400">{step.description}</p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="system" className="mx-auto w-full max-w-[1500px] px-3 py-16 sm:px-5 lg:px-6">
+                    <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-start">
+                        <div>
+                            <p className="text-sm font-semibold uppercase text-violet-300">Project intelligence</p>
+                            <h2 className="mt-3 text-3xl font-semibold tracking-normal text-white sm:text-4xl">
+                                Built around visible agents, measurable signals, and explainable outputs.
+                            </h2>
+                            <p className="mt-5 text-sm leading-7 text-slate-400">
+                                TradeFlux combines market data, forecasting, sentiment, backtesting, and agent monitoring into one system. The page avoids exaggerated claims and frames the product as decision support.
+                            </p>
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            {systemPillars.map((pillar) => {
+                                const Icon = pillar.icon;
+                                return (
+                                    <div key={pillar.label} className="rounded-xl border border-sky-100/10 bg-white/[0.045] p-5">
+                                        <Icon className="h-5 w-5 text-sky-300" />
+                                        <p className="mt-5 text-sm text-slate-400">{pillar.label}</p>
+                                        <p className="mt-1 text-xl font-semibold text-white">{pillar.value}</p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </section>
+
+                <section className="mx-auto w-full max-w-[1500px] px-3 py-16 sm:px-5 lg:px-6">
+                    <div className="relative overflow-hidden rounded-2xl border border-sky-300/20 bg-sky-300/[0.12] p-6 shadow-2xl shadow-sky-950/20 sm:p-8">
+                        <div className="landing-cta-sheen" />
+                        <div className="relative grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+                            <div>
+                                <div className="mb-5 flex items-center gap-4">
+                                    <div className="landing-finale-logo">
+                                        <Image
+                                            src="/logo-only-no-text.png"
+                                            alt="TradeFlux"
+                                            width={92}
+                                            height={92}
+                                            className="h-20 w-20 object-contain"
+                                        />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold uppercase text-sky-200">TradeFlux Team</p>
+                                        <h2 className="mt-1 text-3xl font-semibold tracking-normal text-white sm:text-4xl">
+                                            TradeFlux
+                                        </h2>
+                                    </div>
+                                </div>
+                                <p className="max-w-2xl text-sm leading-7 text-slate-300">
+                                    An Agentic AI Market Forecasting System created as a final year project to make stock analysis, forecasting, sentiment, and agent visibility easier to explore from one dashboard.
+                                </p>
+                                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                                    <button
+                                        type="button"
+                                        onClick={openAuthModal}
+                                        className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-white px-5 text-sm font-bold text-slate-950 transition hover:-translate-y-0.5 hover:bg-sky-50"
+                                    >
+                                        Get Started
+                                        <ArrowRight className="h-4 w-4" />
+                                    </button>
+                                    <a
+                                        href="#top"
+                                        className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white transition hover:bg-white/10"
+                                    >
+                                        Back to top
+                                        <ChevronRight className="h-4 w-4" />
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="mb-4 flex items-center gap-3">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-sky-100">
+                                        <Users className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-white">Project Members</h3>
+                                        <p className="text-sm text-slate-400">Final Year Project team</p>
+                                    </div>
+                                </div>
+                                <div className="grid gap-3 md:grid-cols-3">
+                                    {teamMembers.map((member) => (
+                                        <div
+                                            key={member.rollNo}
+                                            className="rounded-xl border border-white/10 bg-slate-950/35 p-4 transition hover:-translate-y-1 hover:border-sky-300/30 hover:bg-white/[0.06]"
+                                        >
+                                            <p className="font-semibold text-white">{member.name}</p>
+                                            <p className="mt-2 text-sm font-medium text-sky-200">{member.rollNo}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <footer className="border-t border-sky-100/10 px-3 py-8 sm:px-5 lg:px-6">
+                    <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3">
+                            <Image
+                                src="/logo-only-no-text.png"
+                                alt="TradeFlux"
+                                width={44}
+                                height={44}
+                                className="h-11 w-11 object-contain"
+                            />
+                           
+                        </div>
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                            <span>© 2026 TradeFlux</span>
+                            <span className="hidden h-1 w-1 rounded-full bg-slate-700 sm:block" />
+                            <span>Forecasting, sentiment, backtesting, and agent visibility.</span>
+                        </div>
+                    </div>
                 </footer>
-            </div>
+            </main>
 
             <AuthModal
                 isOpen={showAuthModal}

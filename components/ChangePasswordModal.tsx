@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, Lock, Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
+import { X, Lock, Eye, EyeOff, Loader2, KeyRound, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSnackbar } from '@/components/SnackbarProvider';
 
@@ -159,40 +159,60 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="relative w-full max-w-md mx-4 bg-white rounded-xl shadow-2xl overflow-hidden animate-slide-up">
-                {/* Close Button */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md animate-fade-in">
+            <div className="relative w-full max-w-lg overflow-hidden rounded-xl border border-slate-700/70 bg-slate-950 text-slate-100 shadow-2xl shadow-black/50 animate-slide-up">
                 <button
                     onClick={closeModal}
-                    className="absolute top-4 right-4 z-10 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="absolute right-4 top-4 z-10 rounded-lg border border-slate-700 bg-slate-900/80 p-2 text-slate-400 transition hover:border-slate-500 hover:bg-slate-800 hover:text-white"
                     aria-label="Close change password modal"
                 >
-                    <X className="w-5 h-5 text-gray-600" />
+                    <X className="h-5 w-5" />
                 </button>
 
-                <div className="p-7">
-                    <div className="mb-5 flex items-start gap-3 pr-10">
-                        <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-lg bg-slate-950 text-white shadow-lg shadow-slate-950/20">
+                <div className="border-b border-slate-800 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 px-6 py-5">
+                    <div className="flex items-start gap-4 pr-12">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-sky-300/20 bg-sky-400/10 text-sky-200 shadow-lg shadow-sky-950/30">
                             <KeyRound className="h-5 w-5" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-semibold text-gray-900">Change Password</h2>
-                            <p className="mt-1 text-sm leading-5 text-gray-600">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-200/80">Account security</p>
+                            <h2 className="mt-2 text-2xl font-semibold tracking-normal text-white">Change Password</h2>
+                            <p className="mt-1 text-sm leading-6 text-slate-400">
                                 {requiresCurrentPassword
                                     ? 'Confirm your current password, then choose a new one.'
                                     : 'Your Google account does not have a TradeFlux password yet. Set one below if you want email/password login too.'}
                             </p>
                         </div>
                     </div>
+                </div>
+
+                <div className="p-6">
+                    <div className="mb-5 rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+                        <div className="flex items-start gap-3">
+                            <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-400/10 text-emerald-300">
+                                <ShieldCheck className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-white">
+                                    {requiresCurrentPassword ? 'Password protected' : 'Create password access'}
+                                </p>
+                                <p className="mt-1 text-xs leading-5 text-slate-400">
+                                    {requiresCurrentPassword
+                                        ? 'This update is applied to your secure Supabase login credentials.'
+                                        : 'Google sign-in will still work after you add a TradeFlux password.'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
                     {error && (
-                        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                        <div className="mb-4 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
                             {error}
                         </div>
                     )}
 
                     {success && (
-                        <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                        <div className="mb-4 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
                             {success}
                         </div>
                     )}
@@ -201,25 +221,26 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
                         {/* Current Password */}
                         {requiresCurrentPassword && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="mb-2 block text-sm font-medium text-slate-300">
                                 Current Password *
                             </label>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
                                 <input
                                     type={showPasswords.current ? 'text' : 'password'}
                                     placeholder="Enter current password"
                                     value={formData.currentPassword}
                                     onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
-                                    className="w-full pl-10 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all text-gray-900"
+                                    className="h-11 w-full rounded-lg border border-slate-800 bg-slate-900 pl-10 pr-12 text-sm text-white outline-none transition placeholder:text-slate-500 hover:border-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/10"
                                     required={requiresCurrentPassword}
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    className="absolute right-2 top-1/2 rounded-md p-1.5 -translate-y-1/2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+                                    aria-label={showPasswords.current ? 'Hide current password' : 'Show current password'}
                                 >
-                                    {showPasswords.current ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 </button>
                             </div>
                         </div>
@@ -227,67 +248,69 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
 
                         {/* New Password */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="mb-2 block text-sm font-medium text-slate-300">
                                 New Password *
                             </label>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
                                 <input
                                     type={showPasswords.new ? 'text' : 'password'}
                                     placeholder="Enter new password"
                                     value={formData.newPassword}
                                     onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-                                    className="w-full pl-10 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all text-gray-900"
+                                    className="h-11 w-full rounded-lg border border-slate-800 bg-slate-900 pl-10 pr-12 text-sm text-white outline-none transition placeholder:text-slate-500 hover:border-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/10"
                                     required
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    className="absolute right-2 top-1/2 rounded-md p-1.5 -translate-y-1/2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+                                    aria-label={showPasswords.new ? 'Hide new password' : 'Show new password'}
                                 >
-                                    {showPasswords.new ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 </button>
                             </div>
                         </div>
 
                         {/* Confirm Password */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="mb-2 block text-sm font-medium text-slate-300">
                                 Confirm New Password *
                             </label>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
                                 <input
                                     type={showPasswords.confirm ? 'text' : 'password'}
                                     placeholder="Confirm new password"
                                     value={formData.confirmPassword}
                                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                    className="w-full pl-10 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all text-gray-900"
+                                    className="h-11 w-full rounded-lg border border-slate-800 bg-slate-900 pl-10 pr-12 text-sm text-white outline-none transition placeholder:text-slate-500 hover:border-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/10"
                                     required
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    className="absolute right-2 top-1/2 rounded-md p-1.5 -translate-y-1/2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+                                    aria-label={showPasswords.confirm ? 'Hide confirmation password' : 'Show confirmation password'}
                                 >
-                                    {showPasswords.confirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 </button>
                             </div>
                         </div>
 
-                        <div className="flex space-x-3 pt-4">
+                        <div className="flex gap-3 pt-2">
                             <button
                                 type="button"
                                 onClick={closeModal}
                                 disabled={loading}
-                                className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-all"
+                                className="flex h-11 flex-1 items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-sm font-semibold text-slate-300 transition hover:border-slate-500 hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="flex-1 py-3 bg-slate-950 text-white font-semibold rounded-lg hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 inline-flex items-center justify-center gap-2"
+                                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-sky-500 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:-translate-y-0.5 hover:bg-sky-400 hover:shadow-xl disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {loading ? (
                                     <>

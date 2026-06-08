@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   Activity,
@@ -10,7 +11,6 @@ import {
   ChevronRight,
   FileText,
   LayoutDashboard,
-  Shield,
   SlidersHorizontal,
   TrendingUp,
   Users,
@@ -41,7 +41,13 @@ export default function AdminSidebar() {
         {!collapsed ? (
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-emerald-300/25 bg-emerald-400/10">
-              <Shield className="h-5 w-5 text-emerald-300" />
+              <Image
+                src="/logo-only-no-text.png"
+                alt="TradeFlux"
+                width={34}
+                height={34}
+                className="h-8 w-8 object-contain"
+              />
             </div>
             <div className="leading-tight">
               <p className="text-sm font-semibold text-white">TradeFlux</p>
@@ -50,7 +56,13 @@ export default function AdminSidebar() {
           </div>
         ) : (
           <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg border border-emerald-300/25 bg-emerald-400/10">
-            <Shield className="h-5 w-5 text-emerald-300" />
+            <Image
+              src="/logo-only-no-text.png"
+              alt="TradeFlux"
+              width={34}
+              height={34}
+              className="h-8 w-8 object-contain"
+            />
           </div>
         )}
       </div>

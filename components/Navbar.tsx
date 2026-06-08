@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Bell, Search, User, LogOut, Lock, ChevronDown } from 'lucide-react';
 import ChangePasswordModal from './ChangePasswordModal';
@@ -134,7 +135,17 @@ export default function Navbar() {
 
     return (
         <>
-            <div className="h-16 bg-gradient-to-r from-dark-100 via-dark-100 to-dark-100/80 border-b border-gray-700/50 px-6 flex items-center justify-between shadow-lg shadow-primary/5">
+            <div className="h-16 bg-gradient-to-r from-dark-100 via-dark-100 to-dark-100/80 border-b border-gray-700/50 px-3 sm:px-4 flex items-center justify-between shadow-lg shadow-primary/5">
+                <div className="mr-3 hidden h-10 shrink-0 items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-2.5 text-sky-100 shadow-lg shadow-primary/10 sm:flex">
+                    <Image
+                        src="/logo-only-no-text.png"
+                        alt="TradeFlux"
+                        width={30}
+                        height={30}
+                        className="h-7 w-7 object-contain"
+                    />
+                    <span className="hidden text-sm font-semibold text-white xl:inline">TradeFlux</span>
+                </div>
                 {/* Search */}
                 <div className="flex-1 max-w-xl">
                     <div className="relative group">

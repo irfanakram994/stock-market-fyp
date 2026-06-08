@@ -450,6 +450,294 @@ a {
   }
 }
 
+/* Landing page product motion */
+.landing-shell {
+  background:
+    radial-gradient(circle at 16% 8%, rgba(125, 211, 252, 0.24), transparent 30%),
+    radial-gradient(circle at 86% 16%, rgba(167, 139, 250, 0.14), transparent 28%),
+    radial-gradient(circle at 54% 88%, rgba(52, 211, 153, 0.14), transparent 34%),
+    linear-gradient(135deg, #07111f 0%, #0b1b2d 44%, #10172a 100%);
+}
+
+.landing-grid-bg {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: radial-gradient(circle at 50% 36%, black 0%, transparent 74%);
+  animation: landingGridDrift 16s linear infinite;
+}
+
+.landing-ambient {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 999px;
+  filter: blur(14px);
+  opacity: 0.8;
+}
+
+.landing-ambient-one {
+  top: 12%;
+  left: -8%;
+  width: min(38vw, 520px);
+  aspect-ratio: 1;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.2), transparent 68%);
+  animation: landingAmbientFloat 9s ease-in-out infinite;
+}
+
+.landing-ambient-two {
+  right: -10%;
+  bottom: 4%;
+  width: min(44vw, 620px);
+  aspect-ratio: 1;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.16), transparent 70%);
+  animation: landingAmbientFloat 11s ease-in-out infinite reverse;
+}
+
+.landing-finale-logo {
+  position: relative;
+  display: grid;
+  width: 5.75rem;
+  height: 5.75rem;
+  place-items: center;
+  border: 1px solid rgba(125, 211, 252, 0.28);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 36% 24%, rgba(255, 255, 255, 0.24), transparent 36%),
+    linear-gradient(145deg, rgba(14, 165, 233, 0.18), rgba(15, 23, 42, 0.42));
+  box-shadow:
+    0 18px 44px rgba(14, 165, 233, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+  animation: landingLogoPulse 4.6s ease-in-out infinite;
+}
+
+.landing-finale-logo::after {
+  position: absolute;
+  inset: -35%;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.42) 48%, transparent 66%);
+  content: '';
+  transform: translateX(-75%) rotate(8deg);
+  animation: landingLogoSweep 5.4s ease-in-out infinite 0.7s;
+}
+
+.landing-finale-logo img {
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 0 18px rgba(56, 189, 248, 0.32));
+}
+
+.landing-reveal {
+  animation: landingReveal 0.74s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.landing-reveal-delay {
+  animation-delay: 0.14s;
+}
+
+.landing-dashboard-panel {
+  transform: translateZ(0);
+}
+
+.landing-dashboard-panel::before {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 18%, rgba(255, 255, 255, 0.08) 48%, transparent 78%);
+  content: '';
+  opacity: 0;
+  transform: translateX(-42%);
+  animation: landingSheen 6.5s ease-in-out infinite 1.4s;
+}
+
+.landing-dashboard-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.landing-chart-line {
+  stroke-dasharray: 720;
+  stroke-dashoffset: 720;
+  animation: landingChartDraw 3.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.landing-chart-area {
+  animation: landingChartArea 3.2s ease-in-out infinite;
+}
+
+.landing-metric-card {
+  animation: landingMetricBreath 5.2s ease-in-out infinite;
+}
+
+.landing-metric-card:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.landing-metric-card:nth-child(3) {
+  animation-delay: 1s;
+}
+
+.landing-ticker {
+  mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+}
+
+.landing-ticker-track {
+  display: flex;
+  width: max-content;
+  gap: 0.5rem;
+  padding: 0.45rem;
+  animation: landingTicker 22s linear infinite;
+}
+
+.landing-feature-card,
+.landing-step-card {
+  transform: translateZ(0);
+}
+
+.landing-cta-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 18%, rgba(255, 255, 255, 0.12) 48%, transparent 78%);
+  opacity: 0;
+  transform: translateX(-38%);
+  animation: landingSheen 7s ease-in-out infinite 1s;
+}
+
+@keyframes landingGridDrift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 52px 52px;
+  }
+}
+
+@keyframes landingAmbientFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, -5%, 0) scale(1.08);
+  }
+}
+
+@keyframes landingLogoPulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow:
+      0 18px 44px rgba(14, 165, 233, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.045);
+    box-shadow:
+      0 22px 58px rgba(56, 189, 248, 0.28),
+      0 0 34px rgba(52, 211, 153, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  }
+}
+
+@keyframes landingLogoSweep {
+  0%,
+  58% {
+    opacity: 0;
+    transform: translateX(-75%) rotate(8deg);
+  }
+  72% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(75%) rotate(8deg);
+  }
+}
+
+@keyframes landingReveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes landingPanelFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes landingSheen {
+  0%,
+  58% {
+    opacity: 0;
+    transform: translateX(-42%);
+  }
+  72% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(42%);
+  }
+}
+
+@keyframes landingChartDraw {
+  0% {
+    stroke-dashoffset: 720;
+    opacity: 0.2;
+  }
+  28%,
+  82% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.8;
+  }
+}
+
+@keyframes landingChartArea {
+  0%,
+  100% {
+    opacity: 0.24;
+  }
+  50% {
+    opacity: 0.42;
+  }
+}
+
+@keyframes landingMetricBreath {
+  0%,
+  100% {
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(0);
+  }
+  50% {
+    border-color: rgba(56, 189, 248, 0.25);
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes landingTicker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 /* Premium post-login entry transition */
 .post-login-transition {
   --entry-accent: #38bdf8;
@@ -1403,7 +1691,10 @@ a {
   .post-login-transition,
   .post-login-transition *,
   .post-login-transition *::before,
-  .post-login-transition *::after {
+  .post-login-transition *::after,
+  .landing-shell *,
+  .landing-shell *::before,
+  .landing-shell *::after {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;

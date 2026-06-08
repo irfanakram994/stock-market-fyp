@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, Upload, Loader2, Trash2, User as UserIcon } from 'lucide-react';
+import { X, Upload, Loader2, Trash2, User as UserIcon, Mail, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/authContext';
 import { useSnackbar } from '@/components/SnackbarProvider';
@@ -173,86 +173,107 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="relative w-full max-w-lg mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md animate-fade-in">
+            <div className="relative w-full max-w-2xl overflow-hidden rounded-xl border border-slate-700/70 bg-slate-950 text-slate-100 shadow-2xl shadow-black/50 animate-slide-up">
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 z-10 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    className="absolute right-4 top-4 z-10 rounded-lg border border-slate-700 bg-slate-900/80 p-2 text-slate-400 transition hover:border-slate-500 hover:bg-slate-800 hover:text-white"
+                    aria-label="Close profile modal"
                 >
-                    <X className="w-6 h-6 text-gray-600" />
+                    <X className="h-5 w-5" />
                 </button>
 
-                <div className="p-8">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-2">Your Profile</h2>
-                    <p className="text-gray-600 mb-6">Update your profile information</p>
+                <div className="border-b border-slate-800 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 px-6 py-5">
+                    <div className="flex items-start gap-4 pr-12">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-sky-300/20 bg-sky-400/10 text-sky-200 shadow-lg shadow-sky-950/30">
+                            <Sparkles className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-200/80">Account details</p>
+                            <h2 className="mt-2 text-2xl font-semibold tracking-normal text-white">Your Profile</h2>
+                            <p className="mt-1 text-sm leading-6 text-slate-400">Keep your TradeFlux identity clean and up to date.</p>
+                        </div>
+                    </div>
+                </div>
 
-                    <form onSubmit={handleSave} className="space-y-5">
+                <form onSubmit={handleSave} className="grid gap-6 p-6 md:grid-cols-[0.9fr_1.1fr]">
+                    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-inner shadow-black/30">
+                                {profileImage ? (
+                                    <img src={profileImage} alt="Profile" className="h-full w-full object-cover" />
+                                ) : (
+                                    <UserIcon className="h-11 w-11 text-slate-500" />
+                                )}
+                            </div>
+
+                            <p className="mt-4 text-sm font-semibold text-white">{name.trim() || user?.name || 'TradeFlux user'}</p>
+                            <p className="mt-1 max-w-full truncate text-xs text-slate-400">{user?.email || ''}</p>
+                        </div>
+
+                        <div className="mt-5 grid grid-cols-2 gap-2">
+                            <label className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm font-semibold text-slate-200 transition hover:border-sky-400/60 hover:bg-sky-400/10 hover:text-sky-100">
+                                <Upload className="h-4 w-4" />
+                                Upload
+                                <input type="file" accept="image/*" className="hidden" onChange={onFileChange} />
+                            </label>
+                            <button
+                                type="button"
+                                onClick={handleRemovePhoto}
+                                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-red-400/25 bg-red-500/10 px-3 text-sm font-semibold text-red-200 transition hover:border-red-300/50 hover:bg-red-500/15"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                Remove
+                            </button>
+                        </div>
+
+                        <p className="mt-3 text-xs leading-5 text-slate-500">Use PNG, JPG, WebP, or GIF. Keep it under 1MB.</p>
+                    </div>
+
+                    <div className="space-y-4">
                         {error && (
-                            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                            <div className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
                                 {error}
                             </div>
                         )}
 
                         {success && (
-                            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                            <div className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
                                 {success}
                             </div>
                         )}
 
-                        <div className="flex items-center gap-4">
-                            <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
-                                {profileImage ? (
-                                    <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-                                ) : (
-                                    <UserIcon className="w-8 h-8 text-gray-400" />
-                                )}
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-300">Email</label>
+                            <div className="relative">
+                                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                                <input
+                                    type="email"
+                                    value={user?.email || ''}
+                                    disabled
+                                    className="h-11 w-full cursor-not-allowed rounded-lg border border-slate-800 bg-slate-900/70 pl-10 pr-3 text-sm text-slate-500 outline-none"
+                                />
                             </div>
-
-                            <div className="flex items-center gap-2">
-                                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors">
-                                    <Upload className="w-4 h-4" />
-                                    Upload
-                                    <input type="file" accept="image/*" className="hidden" onChange={onFileChange} />
-                                </label>
-                                <button
-                                    type="button"
-                                    onClick={handleRemovePhoto}
-                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                    Remove
-                                </button>
-                            </div>
+                            <p className="mt-1.5 text-xs text-slate-500">Email cannot be changed after registration.</p>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                            <input
-                                type="email"
-                                value={user?.email || ''}
-                                disabled
-                                className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">Email cannot be changed after registration.</p>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                            <label className="mb-2 block text-sm font-medium text-slate-300">Name</label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Enter your name"
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-gray-900"
+                                className="h-11 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-white outline-none transition placeholder:text-slate-500 hover:border-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/10"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                            <label className="mb-2 block text-sm font-medium text-slate-300">Gender</label>
                             <select
                                 value={gender}
                                 onChange={(e) => setGender(e.target.value)}
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-gray-900"
+                                className="h-11 w-full rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-white outline-none transition hover:border-slate-700 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/10"
                             >
                                 <option value="">Prefer not to say</option>
                                 <option value="male">Male</option>
@@ -266,18 +287,19 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-all"
+                                disabled={saving}
+                                className="flex h-11 flex-1 items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-sm font-semibold text-slate-300 transition hover:border-slate-500 hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 Close
                             </button>
                             <button
                                 type="submit"
                                 disabled={saving}
-                                className="flex-1 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 font-semibold rounded-lg hover:from-yellow-500 hover:to-yellow-600 transition-all shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-sky-500 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:-translate-y-0.5 hover:bg-sky-400 hover:shadow-xl disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {saving ? (
                                     <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        <Loader2 className="h-4 w-4 animate-spin" />
                                         Saving...
                                     </>
                                 ) : (
@@ -285,8 +307,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                                 )}
                             </button>
                         </div>
-                    </form>
-                </div>
+                    </div>
+                </form>
             </div>
         </div>
     );
