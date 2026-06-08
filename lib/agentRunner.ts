@@ -73,6 +73,39 @@ export interface AgentPrediction {
   lowerBound: number;
   upperBound: number;
   confidence: number;
+  ds?: string;
+  yhat?: number;
+  yhat_lower?: number;
+  yhat_upper?: number;
+  trend?: number;
+  weekly?: number | null;
+  yearly?: number | null;
+  additive_terms?: number | null;
+  multiplicative_terms?: number | null;
+  sentiment?: number | null;
+}
+
+export interface ForecastHistoricalPoint {
+  ds: string;
+  y: number | null;
+}
+
+export interface ForecastComponents {
+  trend?: Array<{ ds: string; trend: number | null }>;
+  weekly?: Array<{ ds?: string; day?: string; weekly: number | null }>;
+  yearly?: Array<{ ds: string; yearly: number | null }>;
+}
+
+export interface ForecastModelMetrics {
+  modelType?: "prophet" | "fallback";
+  confidenceInterval?: number;
+  forecastDays?: number;
+  avgConfidence?: number;
+  seasonalityMode?: string;
+  changepointPriorScale?: number;
+  hasSentimentRegressor?: boolean;
+  mae?: number;
+  rmse?: number;
 }
 
 export interface RunPredictionResult {
@@ -80,6 +113,10 @@ export interface RunPredictionResult {
   symbol?: string;
   currentPrice?: number;
   predictions?: AgentPrediction[];
+  forecast?: AgentPrediction[];
+  historical?: ForecastHistoricalPoint[];
+  components?: ForecastComponents;
+  modelMetrics?: ForecastModelMetrics;
   trend?: string;
   insight?: string;
   sentimentScore?: number;
@@ -214,6 +251,10 @@ export async function runPredictionAgent(
       symbol: output.data?.symbol,
       currentPrice: output.data?.currentPrice,
       predictions: output.data?.predictions,
+      forecast: output.data?.forecast,
+      historical: output.data?.historical,
+      components: output.data?.components,
+      modelMetrics: output.data?.modelMetrics,
       trend: output.data?.trend,
       insight: output.data?.insight,
       sentimentScore: output.data?.sentimentScore,

@@ -144,6 +144,10 @@ export interface RecentPrediction extends Prediction {
     symbol: string;
     name: string;
     sector?: string | null;
+    forecast?: ForecastPoint[];
+    historical?: HistoricalForecastPoint[];
+    components?: ForecastComponents;
+    modelMetrics?: ForecastModelMetrics;
 }
 
 export function fetchPredictions(symbol?: string, limit?: number) {
@@ -162,17 +166,56 @@ export function fetchRecentPredictions(limit?: number) {
 export interface RunPredictionData {
     symbol: string;
     currentPrice?: number;
-    predictions?: Array<{
+    predictions?: ForecastPoint[];
+    forecast?: ForecastPoint[];
+    historical?: HistoricalForecastPoint[];
+    components?: ForecastComponents;
+    modelMetrics?: ForecastModelMetrics;
+    trend?: string;
+    insight?: string;
+    sentimentScore?: number;
+    avgPredictedPrice?: number | null;
+}
+
+export interface ForecastPoint {
+        ds?: string;
+        yhat?: number;
+        yhat_lower?: number;
+        yhat_upper?: number;
         date: string;
         predictedPrice: number;
         lowerBound: number;
         upperBound: number;
         confidence: number;
-    }>;
-    trend?: string;
-    insight?: string;
-    sentimentScore?: number;
-    avgPredictedPrice?: number | null;
+        trend?: number | null;
+        weekly?: number | null;
+        yearly?: number | null;
+        additive_terms?: number | null;
+        multiplicative_terms?: number | null;
+        sentiment?: number | null;
+}
+
+export interface HistoricalForecastPoint {
+    ds: string;
+    y: number | null;
+}
+
+export interface ForecastComponents {
+    trend?: Array<{ ds: string; trend: number | null }>;
+    weekly?: Array<{ ds?: string; day?: string; weekly: number | null }>;
+    yearly?: Array<{ ds: string; yearly: number | null }>;
+}
+
+export interface ForecastModelMetrics {
+    modelType?: 'prophet' | 'fallback';
+    confidenceInterval?: number;
+    forecastDays?: number;
+    avgConfidence?: number;
+    seasonalityMode?: string;
+    changepointPriorScale?: number;
+    hasSentimentRegressor?: boolean;
+    mae?: number;
+    rmse?: number;
 }
 
 export function runPrediction(symbol: string, forecastDays = 30) {

@@ -16,6 +16,35 @@ from utils.helpers import get_logger, create_response
 logger = get_logger(__name__)
 
 
+def _to_float(value: Any, fallback: float | None = None) -> float | None:
+    try:
+        if value is None:
+            return fallback
+        if pd.isna(value):
+            return fallback
+        number = float(value)
+        return number if np.isfinite(number) else fallback
+    except Exception:
+        return fallback
+
+
+def _round_or_none(value: Any, digits: int = 4) -> float | None:
+    number = _to_float(value)
+    return round(number, digits) if number is not None else None
+
+
+def _historical_actuals(df: pd.DataFrame, days: int = 90) -> List[Dict[str, Any]]:
+    history = []
+    for _, row in df.tail(days).iterrows():
+        history.append(
+            {
+                "ds": row["ds"].strftime("%Y-%m-%d") if hasattr(row["ds"], "strftime") else str(row["ds"])[:10],
+                "y": _round_or_none(row.get("y"), 2),
+            }
+        )
+    return history
+
+
 def _fallback_forecast(df: pd.DataFrame, forecast_days: int) -> List[Dict[str, Any]]:
     """
     Fallback forecasting using simple exponential smoothing + trend.
@@ -49,6 +78,11 @@ def _fallback_forecast(df: pd.DataFrame, forecast_days: int) -> List[Dict[str, A
                 "lowerBound": round(lower, 2),
                 "upperBound": round(upper, 2),
                 "confidence": round(float(confidence), 3),
+                "ds": forecast_date,
+                "yhat": round(forecast_price, 2),
+                "yhat_lower": round(lower, 2),
+                "yhat_upper": round(upper, 2),
+                "trend": round(forecast_price, 2),
             }
         )
 
@@ -139,7 +173,29 @@ def train_and_predict(
                 True,
                 data={
                     "predictions": fallback_predictions,
+                    "forecast": fallback_predictions,
+                    "historical": _historical_actuals(df),
+                    "components": {
+                        "trend": [
+                            {"ds": row["ds"], "trend": row["trend"]}
+                            for row in fallback_predictions
+                        ],
+                        "weekly": [],
+                        "yearly": [],
+                    },
+                    "modelMetrics": {
+                        "modelType": "fallback",
+                        "confidenceInterval": 95,
+                        "forecastDays": forecast_days,
+                        "avgConfidence": round(
+                            float(np.mean([p["confidence"] for p in fallback_predictions])),
+                            3,
+                        ),
+                    },
                     "trend": trend,
+                    "currentPrice": round(float(current_price), 2),
+                    "forecastDays": forecast_days,
+                    "modelVersion": "fallback-exp-smoothing",
                 },
             )
 
@@ -171,6 +227,16 @@ def train_and_predict(
                     "lowerBound": round(lower_bound, 2),
                     "upperBound": round(upper_bound, 2),
                     "confidence": round(confidence, 3),
+                    "ds": pred_date.strftime("%Y-%m-%d"),
+                    "yhat": round(pred_price, 2),
+                    "yhat_lower": round(lower_bound, 2),
+                    "yhat_upper": round(upper_bound, 2),
+                    "trend": _round_or_none(row.get("trend"), 4),
+                    "weekly": _round_or_none(row.get("weekly"), 4),
+                    "yearly": _round_or_none(row.get("yearly"), 4),
+                    "additive_terms": _round_or_none(row.get("additive_terms"), 4),
+                    "multiplicative_terms": _round_or_none(row.get("multiplicative_terms"), 4),
+                    "sentiment": _round_or_none(row.get("sentiment"), 4),
                 }
             )
 
@@ -186,24 +252,62 @@ def train_and_predict(
 
         logger.info(f"Generated {len(predictions)} predictions, trend: {trend}")
 
-        historical = []
-        for _, row in forecast[forecast["ds"] <= last_date].tail(30).iterrows():
-            actual_match = df[df["ds"] == row["ds"]]
-            historical.append(
+        historical = _historical_actuals(df)
+
+        forecast_window = forecast[forecast["ds"] > last_date]
+        weekly_components = []
+        if "weekly" in forecast.columns:
+            weekly_sample = forecast_window.head(7) if len(forecast_window) >= 7 else forecast.tail(7)
+            weekly_components = [
                 {
-                    "date": row["ds"].strftime("%Y-%m-%d"),
-                    "actual": round(actual_match["y"].iloc[0], 2) if len(actual_match) > 0 else None,
-                    "predicted": round(row["yhat"], 2),
-                    "lowerBound": round(row["yhat_lower"], 2),
-                    "upperBound": round(row["yhat_upper"], 2),
+                    "day": row["ds"].strftime("%a"),
+                    "ds": row["ds"].strftime("%Y-%m-%d"),
+                    "weekly": _round_or_none(row.get("weekly"), 4),
                 }
-            )
+                for _, row in weekly_sample.iterrows()
+            ]
+
+        yearly_components = []
+        if "yearly" in forecast.columns:
+            yearly_sample = forecast_window if len(forecast_window) > 0 else forecast.tail(min(len(forecast), forecast_days))
+            yearly_components = [
+                {
+                    "ds": row["ds"].strftime("%Y-%m-%d"),
+                    "yearly": _round_or_none(row.get("yearly"), 4),
+                }
+                for _, row in yearly_sample.iterrows()
+            ]
+
+        trend_components = [
+            {
+                "ds": row["ds"].strftime("%Y-%m-%d"),
+                "trend": _round_or_none(row.get("trend"), 4),
+            }
+            for _, row in forecast_window.iterrows()
+        ]
+
+        avg_confidence = round(float(np.mean([p["confidence"] for p in predictions])), 3) if predictions else 0.0
 
         return create_response(
             True,
             data={
                 "predictions": predictions,
+                "forecast": predictions,
                 "historical": historical,
+                "components": {
+                    "trend": trend_components,
+                    "weekly": weekly_components,
+                    "yearly": yearly_components,
+                },
+                "modelMetrics": {
+                    "modelType": "prophet",
+                    "confidenceInterval": 95,
+                    "forecastDays": forecast_days,
+                    "avgConfidence": avg_confidence,
+                    "seasonalityMode": Config.PROPHET_SEASONALITY_MODE,
+                    "changepointPriorScale": Config.PROPHET_CHANGEPOINT_PRIOR,
+                    "hasSentimentRegressor": bool(include_sentiment and "sentiment" in df.columns),
+                },
                 "trend": trend,
                 "currentPrice": round(current_price, 2),
                 "forecastDays": forecast_days,

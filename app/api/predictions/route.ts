@@ -37,6 +37,10 @@ function toDate(value: unknown) {
   return Number.isNaN(date.getTime()) ? new Date() : date;
 }
 
+function toJsonObject(value: Record<string, unknown>) {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonObject;
+}
+
 async function saveSentimentArticles(stockId: string, articles?: SentimentArticle[]) {
   if (!articles?.length) return 0;
 
@@ -302,12 +306,16 @@ export async function POST(request: NextRequest) {
           agentName: "PredictionOrchestrator",
           status: "completed",
           input: { symbol: symbolUpper, forecastDays, runId, stageOrder: 0, mode: "full_prediction" },
-          output: {
+          output: toJsonObject({
             symbol: result.symbol,
             currentPrice: result.currentPrice,
             trend: result.trend,
             sentimentScore: result.sentimentScore,
             savedSentimentArticles,
+            forecast: result.forecast,
+            historical: result.historical,
+            components: result.components,
+            modelMetrics: result.modelMetrics,
             forecastDays: result.predictions?.length || 0,
             avgPredictedPrice: result.predictions
               ? result.predictions.reduce(
@@ -315,7 +323,7 @@ export async function POST(request: NextRequest) {
                   0,
                 ) / result.predictions.length
               : null,
-          },
+          }),
           duration: Date.now() - startedAt,
           completedAt: new Date(),
       },
@@ -362,6 +370,10 @@ export async function POST(request: NextRequest) {
         symbol: result.symbol,
         currentPrice: result.currentPrice,
         predictions: result.predictions, // Still return all predictions for chart
+        forecast: result.forecast,
+        historical: result.historical,
+        components: result.components,
+        modelMetrics: result.modelMetrics,
         trend: result.trend,
         insight: result.insight,
         sentimentScore: result.sentimentScore,

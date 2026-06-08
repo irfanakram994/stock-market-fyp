@@ -10,7 +10,16 @@ import {
   FileJson,
 } from "lucide-react";
 import ForecastChart from "@/components/Charts/ForecastChart";
-import { fetchRecentPredictions, runPrediction, Prediction } from "@/lib/api";
+import {
+  fetchRecentPredictions,
+  runPrediction,
+  Prediction,
+  RunPredictionData,
+  ForecastPoint,
+  HistoricalForecastPoint,
+  ForecastComponents,
+  ForecastModelMetrics,
+} from "@/lib/api";
 import { useSnackbar } from "@/components/SnackbarProvider";
 import {
   downloadPredictionsCSV,
@@ -24,7 +33,13 @@ import { getLastSelectedStockSymbol } from "@/lib/stockCatalog";
 interface StoredPrediction extends Prediction {
   symbol: string;
   name: string;
+  forecast?: ForecastPoint[];
+  historical?: HistoricalForecastPoint[];
+  components?: ForecastComponents;
+  modelMetrics?: ForecastModelMetrics;
 }
+
+type RecentPredictionLike = StoredPrediction;
 
 export default function AIPredictionsPage() {
   const { showSnackbar, updateSnackbar } = useSnackbar();
@@ -35,6 +50,7 @@ export default function AIPredictionsPage() {
   const [days, setDays] = useState(30);
   const [predictions, setPredictions] = useState<StoredPrediction[]>([]);
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(() => getLastSelectedStockSymbol());
+  const [activeForecast, setActiveForecast] = useState<RunPredictionData | RecentPredictionLike | null>(null);
 
   // Load recent predictions from database on mount
   useEffect(() => {
@@ -62,6 +78,10 @@ export default function AIPredictionsPage() {
           createdAt: p.createdAt,
           symbol: p.symbol,
           name: p.name,
+          forecast: p.forecast,
+          historical: p.historical,
+          components: p.components,
+          modelMetrics: p.modelMetrics,
         }));
 
         setPredictions(mapped);
@@ -70,6 +90,8 @@ export default function AIPredictionsPage() {
         if (mapped.length > 0 && !selectedSymbol) {
           setSelectedSymbol(mapped[0].symbol);
         }
+        const selected = mapped.find((item) => item.symbol === selectedSymbol) || mapped[0];
+        setActiveForecast(selected || null);
       } else {
         setPredictions([]);
         if (!data.success) {
@@ -93,20 +115,21 @@ export default function AIPredictionsPage() {
     }
   };
 
-  const handleRunPrediction = async () => {
+  const handleRunPrediction = async (nextDays = days) => {
+    setDays(nextDays);
     setLoading(true);
     setProgress(12);
 
     const snackbarId = showSnackbar({
       variant: "loading",
-      message: `Running ${symbol} prediction. This can take a little while...`,
+      message: `Running ${symbol} ${nextDays}-day prediction. This can take a little while...`,
     });
 
     const interval = window.setInterval(() => {
       setProgress((current) => Math.min(current + 7, 92));
     }, 900);
 
-    const res = await runPrediction(symbol, days);
+    const res = await runPrediction(symbol, nextDays);
     window.clearInterval(interval);
     setProgress(100);
 
@@ -117,6 +140,7 @@ export default function AIPredictionsPage() {
       });
 
       // Reload predictions from database to get the stored ones
+      setActiveForecast(res.data);
       await loadRecentPredictions();
       setSelectedSymbol(symbol);
     } else {
@@ -153,6 +177,10 @@ export default function AIPredictionsPage() {
     }));
 
   const latestPrediction = filteredPredictions[0];
+  const selectedForecast =
+    activeForecast?.symbol === selectedSymbol
+      ? activeForecast
+      : latestPrediction || null;
   const insight = latestPrediction?.llmSummary;
 
   const handleDownloadCSV = () => {
@@ -275,7 +303,7 @@ export default function AIPredictionsPage() {
           </div>
           <div className="flex items-end">
             <button
-              onClick={handleRunPrediction}
+              onClick={() => handleRunPrediction(days)}
               disabled={loading}
               className="btn-primary w-full flex items-center justify-center"
             >
@@ -312,8 +340,18 @@ export default function AIPredictionsPage() {
           <div className="h-[350px] flex items-center justify-center">
             <Loader className="w-8 h-8 animate-spin text-primary" />
           </div>
-        ) : forecastData.length > 0 ? (
-          <ForecastChart data={forecastData} />
+        ) : selectedForecast ? (
+          <ForecastChart
+            data={forecastData}
+            forecast={selectedForecast.forecast}
+            historical={selectedForecast.historical}
+            components={selectedForecast.components}
+            modelMetrics={selectedForecast.modelMetrics}
+            symbol={selectedSymbol || symbol}
+            forecastDays={days}
+            loading={loading}
+            onHorizonChange={handleRunPrediction}
+          />
         ) : (
           <div className="h-[350px] flex items-center justify-center text-gray-400">
             {predictions.length === 0

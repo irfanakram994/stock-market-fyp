@@ -49,23 +49,60 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const symbols = Array.from(latestByStock.keys());
+    const forecastLogs = symbols.length
+      ? await prisma.agentLog.findMany({
+          where: {
+            userId: user.id,
+            agentName: "PredictionOrchestrator",
+            status: "completed",
+          },
+          select: {
+            input: true,
+            output: true,
+            completedAt: true,
+            startedAt: true,
+          },
+          orderBy: {
+            startedAt: "desc",
+          },
+          take: limit * 8,
+        })
+      : [];
+
+    const latestForecastBySymbol = new Map<string, Record<string, unknown>>();
+    for (const log of forecastLogs) {
+      const input = (log.input || {}) as Record<string, unknown>;
+      const output = (log.output || {}) as Record<string, unknown>;
+      const symbol = String(output.symbol || input.symbol || "").toUpperCase();
+      if (!symbols.includes(symbol) || latestForecastBySymbol.has(symbol)) continue;
+      latestForecastBySymbol.set(symbol, output);
+    }
+
     // Convert to array and limit
     const result = Array.from(latestByStock.values())
       .slice(0, limit)
-      .map((pred) => ({
-        id: pred.id,
-        symbol: pred.stock.symbol,
-        name: pred.stock.name,
-        sector: pred.stock.sector,
-        predictionDate: pred.predictionDate,
-        predictedPrice: pred.predictedPrice,
-        lowerBound: pred.lowerBound,
-        upperBound: pred.upperBound,
-        confidence: pred.confidence,
-        trend: pred.trend,
-        llmSummary: pred.llmSummary,
-        createdAt: pred.createdAt,
-      }));
+      .map((pred) => {
+        const output = latestForecastBySymbol.get(pred.stock.symbol) || {};
+        return {
+          id: pred.id,
+          symbol: pred.stock.symbol,
+          name: pred.stock.name,
+          sector: pred.stock.sector,
+          predictionDate: pred.predictionDate,
+          predictedPrice: pred.predictedPrice,
+          lowerBound: pred.lowerBound,
+          upperBound: pred.upperBound,
+          confidence: pred.confidence,
+          trend: pred.trend,
+          llmSummary: pred.llmSummary,
+          createdAt: pred.createdAt,
+          forecast: output.forecast,
+          historical: output.historical,
+          components: output.components,
+          modelMetrics: output.modelMetrics,
+        };
+      });
 
     return NextResponse.json({
       success: true,

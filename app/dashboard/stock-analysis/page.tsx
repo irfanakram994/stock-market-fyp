@@ -3,13 +3,17 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { TrendingUp, Loader, RefreshCw, Zap } from 'lucide-react';
-import { fetchMarketData, fetchNews, fetchNewsLive, fetchPredictions, fetchStocks, runAgent, NewsItem, Stock } from '@/lib/api';
+import { fetchMarketData, fetchNews, fetchNewsLive, fetchPredictions, fetchStocks, runAgent, NewsItem, Stock, RunPredictionData } from '@/lib/api';
 import { useSnackbar } from '@/components/SnackbarProvider';
 import StockSymbolCombobox from '@/components/StockSymbolCombobox';
 import { getLastSelectedStockSymbol, mergeStockOptions } from '@/lib/stockCatalog';
 
 const PriceChart = dynamic(() => import('@/components/Charts/PriceChart'), {
     loading: () => <div className="h-[300px] rounded-lg bg-slate-800/60 animate-pulse" />,
+    ssr: false,
+});
+const ForecastChart = dynamic(() => import('@/components/Charts/ForecastChart'), {
+    loading: () => <div className="h-[430px] rounded-lg bg-slate-800/60 animate-pulse" />,
     ssr: false,
 });
 const RSIChart = dynamic(() => import('@/components/Charts/RSIChart'), {
@@ -36,6 +40,7 @@ export default function StockAnalysisPage() {
     const [stockName, setStockName] = useState<string>('');
     const [news, setNews] = useState<NewsItem[]>([]);
     const [predictions, setPredictions] = useState<PredictionData[]>([]);
+    const [forecastPayload, setForecastPayload] = useState<RunPredictionData | null>(null);
     const [priceChartData, setPriceChartData] = useState<Array<{ date: string; price: number }>>([]);
     const [latestPrice, setLatestPrice] = useState<number | null>(null);
     const [trend, setTrend] = useState<string>('');
@@ -80,6 +85,7 @@ export default function StockAnalysisPage() {
 
             setPriceChartData([]);
             setLatestPrice(null);
+            setForecastPayload(null);
             const knownStock = stockOptions.find((stock) => stock.symbol === symUpper);
             setStockName(knownStock?.name || symUpper);
 
@@ -115,6 +121,7 @@ export default function StockAnalysisPage() {
             setLoadError(`Failed to load stock data: ${message}`);
             setPriceChartData([]);
             setLatestPrice(null);
+            setForecastPayload(null);
             setStockName(symUpper);
             setNews([]);
             setNewsError('Failed to load news. Please check your Python agents and API configuration.');
@@ -142,7 +149,7 @@ export default function StockAnalysisPage() {
         loadStockOptions();
     }, []);
 
-    const handleRunLiveAnalysis = useCallback(async () => {
+    const handleRunLiveAnalysis = useCallback(async (forecastDays = 30) => {
         const seq = requestSeq.current + 1;
         requestSeq.current = seq;
         const symUpper = selectedSymbol.toUpperCase();
@@ -155,7 +162,7 @@ export default function StockAnalysisPage() {
             const [marketRes, newsRes, predRes] = await Promise.all([
                 fetchMarketData(symUpper),
                 fetchNewsLive(symUpper),
-                runAgent('prediction', symUpper, 30),
+                runAgent('prediction', symUpper, forecastDays),
             ]);
 
             if (requestSeq.current !== seq) return;
@@ -196,6 +203,7 @@ export default function StockAnalysisPage() {
             if (predRes.success && predRes.data) {
                 const pd = predRes.data as any;
                 setPredictions(pd.predictions || []);
+                setForecastPayload(pd as RunPredictionData);
                 setTrend(pd.trend || '');
                 setSentiment(pd.sentimentScore ?? null);
                 setInsight(pd.insight || '');
@@ -232,7 +240,7 @@ export default function StockAnalysisPage() {
                     />
                     <button
                         type="button"
-                        onClick={handleRunLiveAnalysis}
+                        onClick={() => handleRunLiveAnalysis(30)}
                         disabled={liveLoading || loading}
                         className="btn-primary inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
                     >
@@ -280,7 +288,25 @@ export default function StockAnalysisPage() {
                     {/* Price Chart */}
                     <div className="card">
                         <h3 className="text-xl font-bold mb-4">Price History</h3>
-                        {displayChartData.length > 0 ? (
+                        {forecastPayload?.forecast?.length || forecastPayload?.predictions?.length ? (
+                            <ForecastChart
+                                data={predictionChartData.map((point) => ({
+                                    date: point.date,
+                                    actual: null,
+                                    predicted: point.price,
+                                    lower: null,
+                                    upper: null,
+                                }))}
+                                forecast={forecastPayload.forecast || forecastPayload.predictions}
+                                historical={forecastPayload.historical}
+                                components={forecastPayload.components}
+                                modelMetrics={forecastPayload.modelMetrics}
+                                symbol={selectedSymbol}
+                                forecastDays={forecastPayload.modelMetrics?.forecastDays || forecastPayload.forecast?.length || 30}
+                                loading={liveLoading}
+                                onHorizonChange={handleRunLiveAnalysis}
+                            />
+                        ) : displayChartData.length > 0 ? (
                             <>
                                 <PriceChart data={displayChartData} />
                                 {chartSourceLabel && (
@@ -360,7 +386,7 @@ export default function StockAnalysisPage() {
                         <h3 className="text-xl font-bold mb-4">Recent News</h3>
                         <button
                             type="button"
-                            onClick={handleRunLiveAnalysis}
+                            onClick={() => handleRunLiveAnalysis(30)}
                             disabled={liveLoading}
                             className="mb-4 inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 transition-colors hover:border-primary/60 hover:bg-slate-700 disabled:opacity-60"
                         >

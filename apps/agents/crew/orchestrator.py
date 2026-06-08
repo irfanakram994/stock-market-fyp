@@ -60,6 +60,10 @@ class CrewAIOrchestrator:
                 current_price = self.state.prediction_result.get("data", {}).get("currentPrice")
 
             predictions = self.state.prediction_result.get("data", {}).get("predictions", [])
+            forecast = self.state.prediction_result.get("data", {}).get("forecast", predictions)
+            historical = self.state.prediction_result.get("data", {}).get("historical", [])
+            components = self.state.prediction_result.get("data", {}).get("components", {})
+            model_metrics = self.state.prediction_result.get("data", {}).get("modelMetrics", {})
             trend = self.state.prediction_result.get("data", {}).get("trend", "neutral")
             insight = "Insight generation failed"
             if self.state.llm_result and self.state.llm_result.get("success"):
@@ -75,6 +79,10 @@ class CrewAIOrchestrator:
                     "symbol": self.state.symbol,
                     "currentPrice": current_price,
                     "predictions": predictions,
+                    "forecast": forecast,
+                    "historical": historical,
+                    "components": components,
+                    "modelMetrics": model_metrics,
                     "trend": trend,
                     "insight": insight,
                     "sentimentScore": self.state.sentiment_score,

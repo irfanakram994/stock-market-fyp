@@ -72,7 +72,7 @@ export default function StockSymbolCombobox({
       cleanQuery === selectedSymbol ||
       (allowEmpty && cleanQuery === emptyLabel.toLowerCase())
     ) {
-      return options.slice(0, 20);
+      return options;
     }
 
     return options
