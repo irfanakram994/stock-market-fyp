@@ -256,9 +256,89 @@ export function fetchNewsLive(symbol: string) {
     return fetchApi<NewsItem[]>(`/api/news-live?symbol=${encodeURIComponent(symbol)}`);
 }
 
+export interface MarketCandle {
+    date: string;
+    open: number | null;
+    high: number | null;
+    low: number | null;
+    close: number;
+    volume: number | null;
+    rsi: number | null;
+    macd: number | null;
+    macdSignal: number | null;
+    macdHistogram: number | null;
+    ema20: number | null;
+    ema50: number | null;
+    ema200: number | null;
+    volatility: number | null;
+}
+
+export interface StockAnalysisData {
+    metrics: {
+        currentPrice: number | null;
+        previousClose: number | null;
+        dayChange: number | null;
+        dayChangePercent: number | null;
+        fiftyTwoWeekHigh: number | null;
+        fiftyTwoWeekLow: number | null;
+        marketCap: number | null;
+        currency?: string;
+    };
+    technical: {
+        rsi: { value: number | null; label: string };
+        macd: { value: number | null; signal: number | null; histogram: number | null; label: string };
+        ema20: { value: number | null; label: string };
+        ema50: { value: number | null; label: string };
+        ema200: { value: number | null; label: string };
+    };
+    trends: {
+        shortTerm: { label: string; score: number; returnPercent: number | null };
+        midTerm: { label: string; score: number; returnPercent: number | null };
+        longTerm: { label: string; score: number; returnPercent: number | null };
+    };
+    supportResistance: {
+        support1: number | null;
+        support2: number | null;
+        resistance1: number | null;
+        resistance2: number | null;
+    };
+    volume: {
+        latestVolume: number | null;
+        averageVolume20: number | null;
+        ratioToAverage: number | null;
+        label: string;
+    };
+    fundamentals: {
+        peRatio: number | null;
+        eps: number | null;
+        revenueGrowth: number | null;
+        profitMargin: number | null;
+        debtToEquity: number | null;
+        cashFlow: number | null;
+        beta: number | null;
+        analystSentiment?: unknown;
+        analystRating: number | null;
+    };
+    risk: {
+        financial: string;
+        market: string;
+        volatility: string;
+        overall: string;
+        score: number | null;
+    };
+}
+
+export interface MarketData {
+    symbol: string;
+    prices: Array<{ date: string; price: number }>;
+    candles?: MarketCandle[];
+    info?: Record<string, unknown>;
+    analysis?: StockAnalysisData;
+}
+
 /** Fetch live market data from yfinance via Python agent (no DB) */
 export function fetchMarketData(symbol: string) {
-    return fetchApi<{ symbol: string; prices: Array<{ date: string; price: number }>; info?: Record<string, unknown> }>(
+    return fetchApi<MarketData>(
         `/api/market?symbol=${encodeURIComponent(symbol)}`
     );
 }

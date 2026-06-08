@@ -131,6 +131,9 @@ class TechnicalIndicators:
         result['SMA_20'] = TechnicalIndicators.calculate_sma(df['Close'], 20)
         result['SMA_50'] = TechnicalIndicators.calculate_sma(df['Close'], 50)
         result['SMA_200'] = TechnicalIndicators.calculate_sma(df['Close'], 200)
+        result['EMA_20'] = TechnicalIndicators.calculate_ema(df['Close'], 20)
+        result['EMA_50'] = TechnicalIndicators.calculate_ema(df['Close'], 50)
+        result['EMA_200'] = TechnicalIndicators.calculate_ema(df['Close'], 200)
         result['EMA_12'] = TechnicalIndicators.calculate_ema(df['Close'], 12)
         result['EMA_26'] = TechnicalIndicators.calculate_ema(df['Close'], 26)
         
