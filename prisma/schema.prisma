@@ -148,9 +148,18 @@ model BacktestResult {
   sharpeRatio     Float?
   maxDrawdown     Float?
   winRate         Float?
+  lossRate        Float?
   totalTrades     Int
   profitableTrades Int
   losingTrades    Int
+  buyHoldReturn   Float?
+  bestTrade       Json?
+  worstTrade      Json?
+  riskReward      Float?
+  strategyConfig  Json?
+  priceSeries     Json?
+  signals         Json?
+  benchmarkCurve  Json?
   equityCurve     Json     // Array of {date, value}
   trades          Json     // Array of trade details
   createdAt       DateTime @default(now())

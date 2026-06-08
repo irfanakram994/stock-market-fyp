@@ -44,7 +44,8 @@ def _period_to_start_end(
     if start_date and end_date:
         try:
             start_dt = datetime.strptime(start_date[:10], "%Y-%m-%d")
-            end_dt = datetime.strptime(end_date[:10], "%Y-%m-%d")
+            # yfinance treats end as exclusive; UI/API date ranges are inclusive.
+            end_dt = datetime.strptime(end_date[:10], "%Y-%m-%d") + timedelta(days=1)
             return start_dt, end_dt
         except ValueError:
             pass

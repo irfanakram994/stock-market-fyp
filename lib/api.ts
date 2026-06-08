@@ -407,16 +407,72 @@ export interface BacktestResult {
     initialCapital: number;
     finalCapital: number;
     totalReturn: number;
+    buyHoldReturn?: number | null;
     sharpeRatio?: number;
     maxDrawdown?: number;
     winRate?: number;
+    lossRate?: number | null;
     totalTrades: number;
     profitableTrades: number;
     losingTrades: number;
+    bestTrade?: BacktestTrade | null;
+    worstTrade?: BacktestTrade | null;
+    riskReward?: number | null;
+    strategyConfig?: BacktestStrategyConfig | null;
     equityCurve: { date: string; value: number }[];
-    trades: { date: string; type: string; price: number; shares: number; pnl: number }[];
+    benchmarkCurve?: { date: string; value: number }[] | null;
+    priceSeries?: BacktestPricePoint[] | null;
+    signals?: BacktestSignal[] | null;
+    trades: BacktestTrade[];
     createdAt: string;
     stock?: { symbol: string; name: string };
+}
+
+export interface BacktestStrategyConfig {
+    strategyType: 'moving_average_crossover';
+    shortWindow: number;
+    longWindow: number;
+}
+
+export interface BacktestPricePoint {
+    date: string;
+    open: number | null;
+    high: number | null;
+    low: number | null;
+    close: number;
+    volume: number | null;
+    shortMa: number | null;
+    longMa: number | null;
+}
+
+export interface BacktestSignal {
+    date: string;
+    type: 'BUY' | 'SELL';
+    price: number;
+    shares: number;
+    pnl: number | null;
+    forcedExit?: boolean;
+}
+
+export interface BacktestTrade {
+    entryDate: string;
+    exitDate: string;
+    entryPrice: number;
+    exitPrice: number;
+    shares: number;
+    pnl: number;
+    pnlPercent: number;
+    holdingDays: number;
+}
+
+export interface RunBacktestInput {
+    symbol: string;
+    startDate: string;
+    endDate: string;
+    initialCapital: number;
+    strategyType?: 'moving_average_crossover';
+    shortWindow?: number;
+    longWindow?: number;
 }
 
 export function fetchBacktests(symbol?: string) {
@@ -425,9 +481,9 @@ export function fetchBacktests(symbol?: string) {
     return fetchApi<BacktestResult[]>(`/api/backtesting?${params}`, undefined, { includeAuth: true });
 }
 
-export function runBacktest(symbol: string, startDate: string, endDate: string, initialCapital: number) {
+export function runBacktest(input: RunBacktestInput) {
     return fetchApi<BacktestResult>('/api/backtesting', {
         method: 'POST',
-        body: JSON.stringify({ symbol, startDate, endDate, initialCapital }),
+        body: JSON.stringify(input),
     }, { includeAuth: true });
 }

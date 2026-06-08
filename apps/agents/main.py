@@ -35,6 +35,8 @@ def main():
     ], required=True, help='Agent to run')
     parser.add_argument('--symbol', required=True, help='Stock symbol')
     parser.add_argument('--days', type=int, default=30, help='Forecast days')
+    parser.add_argument('--start-date', default=None, help='Historical start date in YYYY-MM-DD format')
+    parser.add_argument('--end-date', default=None, help='Historical end date in YYYY-MM-DD format')
     parser.add_argument(
         '--framework',
         choices=['auto', 'legacy', 'crewai'],
@@ -51,6 +53,15 @@ def main():
             print("Configuration error: NEWS_API_KEY is required", file=sys.stderr)
             sys.exit(1)
         result = fetch_news(symbol)
+        print(to_json(result))
+        return
+
+    if args.agent == 'market':
+        result = fetch_historical_data(
+            symbol,
+            start_date=args.start_date,
+            end_date=args.end_date,
+        )
         print(to_json(result))
         return
 

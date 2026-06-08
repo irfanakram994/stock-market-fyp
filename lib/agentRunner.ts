@@ -141,6 +141,126 @@ export interface RunPredictionResult {
   error?: string;
 }
 
+export interface HistoricalMarketCandle {
+  date: string;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number;
+  volume: number | null;
+}
+
+export interface HistoricalMarketResult {
+  success: boolean;
+  symbol?: string;
+  candles?: HistoricalMarketCandle[];
+  info?: Record<string, unknown>;
+  error?: string;
+}
+
+function parseAgentStdout(stdout: string) {
+  try {
+    return JSON.parse(stdout);
+  } catch (firstErr) {
+    const jsonStart = stdout.indexOf("{");
+    if (jsonStart !== -1) {
+      try {
+        return JSON.parse(stdout.slice(jsonStart));
+      } catch (_) {
+        throw firstErr;
+      }
+    }
+    throw firstErr;
+  }
+}
+
+function shellQuote(value: string) {
+  return `"${value.replace(/"/g, '\\"')}"`;
+}
+
+function asFiniteNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function valueFrom(row: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    if (row[key] !== undefined && row[key] !== null) return row[key];
+  }
+  return null;
+}
+
+/**
+ * Fetch exact-range historical OHLCV data through the Python yfinance service.
+ * This intentionally bypasses CrewAI/LLM/news validation because strategy
+ * backtesting only needs historical market candles.
+ */
+export async function runHistoricalMarketData(
+  symbol: string,
+  startDate: string,
+  endDate: string,
+): Promise<HistoricalMarketResult> {
+  const command = [
+    shellQuote(PYTHON_CMD),
+    shellQuote(AGENT_SCRIPT_PATH),
+    "--agent market",
+    `--symbol ${shellQuote(symbol)}`,
+    `--start-date ${shellQuote(startDate)}`,
+    `--end-date ${shellQuote(endDate)}`,
+    "--framework legacy",
+  ].join(" ");
+
+  const env = {
+    ...process.env,
+    PROJECT_ROOT,
+    DOTENV_PATH: path.join(PROJECT_ROOT, ".env"),
+  };
+
+  try {
+    const { stdout } = await execAsync(command, {
+      cwd: PROJECT_ROOT,
+      env,
+      maxBuffer: 10 * 1024 * 1024,
+      timeout: 120000,
+    });
+    const parsed = parseAgentStdout(stdout);
+    if (!parsed?.success) {
+      return { success: false, error: parsed?.error || "Failed to fetch historical market data" };
+    }
+
+    const data = parsed.data as { symbol?: string; data?: Array<Record<string, unknown>>; info?: Record<string, unknown> };
+    const candles = (data?.data || [])
+      .map((row) => {
+        const close = asFiniteNumber(valueFrom(row, ["Close", "close", "Adj Close", "AdjClose", "price"]));
+        const date = String(valueFrom(row, ["Date", "date", "Datetime"]) ?? "").slice(0, 10);
+        if (!date || close === null || close <= 0) return null;
+        return {
+          date,
+          open: asFiniteNumber(valueFrom(row, ["Open", "open"])),
+          high: asFiniteNumber(valueFrom(row, ["High", "high"])),
+          low: asFiniteNumber(valueFrom(row, ["Low", "low"])),
+          close,
+          volume: asFiniteNumber(valueFrom(row, ["Volume", "volume"])),
+        } satisfies HistoricalMarketCandle;
+      })
+      .filter((candle): candle is HistoricalMarketCandle => candle !== null)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    return {
+      success: true,
+      symbol: data?.symbol || symbol,
+      candles,
+      info: data?.info || {},
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 /**
  * Run Python prediction agent SYNCHRONOUSLY - uses Prophet, OpenAI/Groq LLM, News APIs.
  * No database dependency.
