@@ -42,9 +42,9 @@ type PostLoginTransitionContextValue = {
   markDestinationReady: (destination?: string) => void;
 };
 
-const MIN_TRANSITION_DURATION_MS = 3000;
-const EXIT_TRANSITION_DURATION_MS = 1120;
-const MAX_TRANSITION_DURATION_MS = 7500;
+const MIN_TRANSITION_DURATION_MS = 700;
+const EXIT_TRANSITION_DURATION_MS = 420;
+const MAX_TRANSITION_DURATION_MS = 3000;
 
 const loadingMessages = [
   'Preparing your AI workspace...',
