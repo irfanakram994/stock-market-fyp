@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Bell, Search, User, LogOut, Lock, ChevronDown } from 'lucide-react';
+import { Bell, User, LogOut, Lock, ChevronDown } from 'lucide-react';
 import ChangePasswordModal from './ChangePasswordModal';
 import ProfileModal from './ProfileModal';
 import { useAuth } from '@/lib/authContext';
@@ -135,31 +134,9 @@ export default function Navbar() {
 
     return (
         <>
-            <div className="h-16 bg-gradient-to-r from-dark-100 via-dark-100 to-dark-100/80 border-b border-gray-700/50 px-3 sm:px-4 flex items-center justify-between shadow-lg shadow-primary/5">
-                <div className="mr-3 hidden h-10 shrink-0 items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-2.5 text-sky-100 shadow-lg shadow-primary/10 sm:flex">
-                    <Image
-                        src="/logo-only-no-text.png"
-                        alt="TradeFlux"
-                        width={30}
-                        height={30}
-                        className="h-7 w-7 object-contain"
-                    />
-                    <span className="hidden text-sm font-semibold text-white xl:inline">TradeFlux</span>
-                </div>
-                {/* Search */}
-                <div className="flex-1 max-w-xl">
-                    <div className="relative group">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-primary transition-colors" />
-                        <input
-                            type="text"
-                            placeholder="Search stocks, news, predictions..."
-                            className="w-full pl-10 pr-4 py-2 bg-dark-200/60 border border-gray-700/60 rounded-lg focus:outline-none focus:border-primary focus:bg-dark-200 focus:ring-1 focus:ring-primary/30 transition-all text-gray-200 placeholder-gray-500 hover:border-gray-600/80"
-                        />
-                    </div>
-                </div>
-
+            <div className="h-16 bg-gradient-to-r from-dark-100 via-dark-100 to-dark-100/80 border-b border-gray-700/50 px-3 sm:px-4 flex items-center justify-end shadow-lg shadow-primary/5">
                 {/* Right Section */}
-                <div className="flex items-center space-x-4 ml-6">
+                <div className="flex items-center space-x-4">
                     {/* Notifications */}
                     <div className="relative" ref={notificationRef}>
                         <button
